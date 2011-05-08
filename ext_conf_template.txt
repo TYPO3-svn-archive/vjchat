@@ -1,0 +1,56 @@
+	# cat=basic; type=int; label=Entries: PID for Chat Entries; new entries are stored on this page
+	pids.entries = 
+
+	# cat=basic; type=int; label=Sessions: PID for Chat Sessions; new sessions that were created within the chat are stored here
+	pids.sessions = 
+
+	# cat=basic; type=int; label=Rooms: PID for Chat Rooms; 
+	pids.rooms = 
+
+	# cat=basic; type=string; label=Server Time: This value fixes the server time that is displayed during the chat (e.g. "+1 hour")
+	serverTimeOffset = +1 hour
+
+	# cat=basic; type=string; label=Emoticons: Path to emoticons
+	emoticonsPath = typo3conf/ext/vjchat/pi1/emoticons/
+
+	# cat=basic; type=string; label=Prototype: Path to the prototype JavaScript framework from Sam Stephenson >=1.4.0. Since TYPO3 4.1 the library is located in typo3/contrib/. If you don't want that this extension includes prototype automatically just clear this field. If you are using older versions of TYPO3 you can install the extension prototypejs. When 'prototypejs' is loaded, this setting has no effect.
+	prototypeJSPath = typo3/contrib/prototype/prototype.js
+	
+	# cat=basic; type=string; label=Scriptaculous: Path to the scriptaculous. The library is usually located in typo3/contrib/. The usage is optional (not required for the chat). If you don't want that this extension includes scriptaculous clear this field. 
+	scriptaculousJSPath = typo3/contrib/scriptaculous/scriptaculous.js
+
+	# cat=basic; type=boolean; label=Show parameter description: If activated the 'help' command shows also a description for each parameter
+	showParameterDescription = 0
+
+	# cat=basic; type=boolean; label=Hide private rooms by default: Sets the hidden flag for new private rooms by default
+	hidePrivateRooms = 1
+
+	# cat=basic; type=boolean; label=Delete private rooms if empty: If set, private rooms will always be flagged as 'deleted' when there is no user in.
+	deletePrivateRoomsIfEmpty = 1
+
+	# cat=basic; type=boolean; label=Hide superusers: Sets the hidden flag to a superuser when entering a chat room
+	hideSuperusers = 1
+
+	# cat=basic; type=boolean; label=Private messages: Enable/disable private messages (/msg)
+	allowPrivateMessages = 1
+
+	# cat=basic; type=boolean; label=Private rooms: Enable/disable private rooms (/newroom)
+	allowPrivateRooms = 1
+
+	# cat=basic; type=boolean; label=PMs for superuser: Defines if the superuser can read private messages
+	superuserCanReadPMs = 1
+	
+	# cat=basic; type=boolean; label=Make sessions: Allows moderators to create sessions from a room (/makesession)
+	createSessions = 0
+
+	# cat=basic; type=boolean; label=Change room status: Allows moderators to change the room status (/switchroomstatus hidden, private)
+	moderatorsAllowSwitchRoomStatus = 0
+
+	# cat=basic; type=int; label=Auto Delete Entries: Delete ALL messages that are older than this value (seconds) of any room! If you are using sessions you should disable this option by setting value to 0 (otherwise entries of sessions will be deleted as well) and use the command /cleanup or /cleanuproom to delete unused entries manually.
+	autoDeleteEntries = 0
+	
+	# cat=basic; type=int; label=Maximum user idle time (seconds): When a user does not fetch any messages during this period of time it is assumed that the user has left the chat and a message is shown.
+	maxAwayTime = 15
+
+	# cat=basic; type=string; label=SoundSupport: Actually only soundmanager2 from Scott Schiller (http://www.schillmania.com/projects/soundmanager2/) is supported that is part of this extension. An empty string disables sound support.
+	soundSupport = soundmanager2

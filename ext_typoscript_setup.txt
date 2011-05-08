@@ -1,0 +1,1263 @@
+###############################################################################################################
+# Configuration og Ajax Chat
+# -------------------------------------------------------------------------------------------------------------
+#
+# Author: Vincent Tietz <vincent.tietz@vj-media.de>
+# Donate: http://www.vincent-tietz.de/donate
+###############################################################################################################
+
+plugin.tx_vjchat_pi1 {
+
+	templateFile = EXT:vjchat/pi1/chat.tpl.html
+	
+		# if not defined anything in the configuration form
+	pidList = 
+	
+		# if you set this you do not need to define it in each flexform
+	defaultChatpopupPid =
+
+		# tooltipOffset (might be useful)
+	tooltipOffsetXY = 20,10
+	
+	loadingMessage = TEXT
+	loadingMessage.data = LLL:EXT:vjchat/pi1/locallang.php:loading_message
+	loadingMessage.wrap = <p>|</p>
+	
+	###############################################################################################################
+	# THE COBJs (items)
+	###############################################################################################################
+	
+	# these COAs are used by the views
+	# Attention! just overwriting values of plugin.tx_vjchat_pi1.cObjects.* will have no effect, because they are copied in the views with '<'
+	# To customize rendering you need either copy the whole configuration or overwrite the respective values in plugin.tx_vjchat_pi1.views.*
+	# e.g. plugin.tx_vjchat_pi1.views.rooms.oneRoom
+	cObjects {
+		# represents one Room
+		# used in view rooms
+		# available fields are uid, name, description, userCount, showUserCount, sessionCount, closed, maxusercount, onlineExperts, onlineModerators, onlineUsers, allUserNicknames, allUserSnippets, isFull
+		room = COA
+		room {
+			
+			10 = TEXT
+			10.value = <h2>{field:name}</h2>
+			10.insertData = 1
+
+			15 = IMAGE
+			15.file {
+				import = uploads/tx_vjchat/
+				import.field = image
+				import.listNum = 0
+			}
+			
+			20 = TEXT
+			20.dataWrap = <p>{field:description}</p>
+			20.if.isTrue.field = description
+		
+			40 = COA
+			40 {
+				
+				40 = TEXT
+				40 {
+					data = LLL:EXT:vjchat/pi1/locallang.php:user_in_chat
+					dataWrap = {field:userCount}&nbsp;|
+					if.isTrue.field = userCount
+				}
+	
+				50 = TEXT
+				50.data = LLL:EXT:vjchat/pi1/locallang.php:no_user_in_chat
+				50.if.isFalse.field = userCount
+
+				60 = TEXT
+				60 {
+#					data = LLL:EXT:vjchat/pi1/locallang.php:max_user
+					dataWrap = &nbsp;(max. {field:maxusercount})
+					if.isTrue.field = maxusercount
+				}
+				
+				if.isTrue.field = showUserCount
+			}
+			
+			50 = COA
+			50 {
+				
+
+				65 = TEXT
+				65 {
+					value = {LLL:EXT:vjchat/pi1/locallang.php:superusers}&nbsp;{field:onlineSuperusers}
+					insertData = 1
+					if.isTrue.field = onlineExperts	
+					wrap = <br />|
+				}				
+				
+				70 = TEXT
+				70 {
+					value = {LLL:EXT:vjchat/pi1/locallang.php:experts}&nbsp;{field:onlineExperts}
+					insertData = 1
+					if.isTrue.field = onlineExperts	
+					wrap = <br />|
+				}
+
+				80 = TEXT
+				80 {
+					value = {LLL:EXT:vjchat/pi1/locallang.php:moderators}&nbsp;{field:onlineModerators}
+					insertData = 1
+					if.isTrue.field = onlineModerators	
+					wrap = <br />|
+				}
+
+				90 = TEXT
+				90 {
+					value = {LLL:EXT:vjchat/pi1/locallang.php:users}&nbsp;{field:onlineUsers}
+					insertData = 1
+					if.isTrue.field = onlineUsers	
+					wrap = <br />|
+				}
+
+				wrap = <p class="small">|</p>
+			
+			}
+			
+			60 = COA
+			60 {
+
+				10 = COA
+				10 {
+			
+					10 = TEXT
+					10 {
+						data = LLL:EXT:vjchat/pi1/locallang.php:enter_chat
+						typolink.parameter.data = page:uid
+						typolink.additionalParams = &tx_vjchat_pi1[uid]={field:uid}&tx_vjchat_pi1[view]=chat
+						typolink.additionalParams.insertData = 1
+						if.isFalse.field = page
+					}
+					
+					# try to link header if the page in room's record is given
+					20 = TEXT
+					20 {
+						data = LLL:EXT:vjchat/pi1/locallang.php:enter_chat
+						typolink.parameter.dataWrap = {field:page}
+						if.isTrue.field = page
+					}	
+
+					if.isFalse.field = closed					
+					
+				}
+
+				20 = TEXT
+				20.data = LLL:EXT:vjchat/pi1/locallang.php:new_window
+				20.typolink.parameter.dataWrap = javascript:tx_vjchat_openNewChatWindow('{field:newWindowUrl}',{field:uid});
+				20.typolink.ATagParams.stdWrap.dataWrap = onClick="tx_vjchat_openNewChatWindow('{field:newWindowUrl}',{field:uid}); return false;" 
+				20.if.isTrue.field = chatwindow
+				20.wrap = &nbsp;|
+
+	
+				30 = TEXT
+				30 {
+					data = LLL:EXT:vjchat/pi1/locallang.php:closed
+					if.isTrue.field = closed
+				}
+	
+				40 = TEXT
+				40 {
+					data = LLL:EXT:vjchat/pi1/locallang.php:sessions
+					innerWrap = {field:sessionCount}&nbsp;|
+					innerWrap.insertData = 1
+					typolink.parameter.data = page:uid
+					typolink.additionalParams = &tx_vjchat_pi1[uid]={field:uid}&tx_vjchat_pi1[view]=sessions
+					typolink.additionalParams.insertData = 1
+					if.isTrue.field = sessionCount
+					wrap = &nbsp;|
+				}
+				
+				wrap = <p>|</p>
+				
+			}
+
+		}
+		
+		# this is just another room type for the view Rooms (short), could be used for teaser
+		# the most things can be switched off with the FLEX form of the plugin or just be removed like here
+		roomShort = COA
+		roomShort < .room
+		roomShort {
+
+			# 10.value = <h2>{field:name} ({field:userCount})</h2>
+		
+			# do not show user types and count, just nicknames
+			40 > 
+			50 >
+
+			40 = TEXT
+			# 40.dataWrap = {field:allUserNicknames}
+			40.dataWrap = {field:allUserSnippets}
+			40.wrap = <p>|</p>
+			
+		}
+
+		# uses in view sessions
+		# available fields are uid, name, description, entriesCount
+		session = COA
+		session {
+			10 = TEXT
+			10.dataWrap = <h3>{field:name}</h3>
+
+			20 = TEXT
+			20.dataWrap = <p>{field:description}</p>
+			20.if.isTrue.field = description
+
+			30 = COA
+			30.wrap = <p class="small">|</p>
+			30 {
+				1 = TEXT
+				1.field = startdate
+				1.date = D, d.m.y h:i
+	
+				2 = TEXT
+				2.field = enddate
+				2.date = D, d.m.y h:i
+				2.wrap = &nbsp;-&nbsp;|
+			}
+			
+
+			40 = TEXT
+			40 {
+				value = messages
+				lang.de = Nachrichten ansehen
+				innerWrap = {field:entriesCount}&nbsp;|
+				typolink.parameter.data = page:uid
+				typolink.additionalParams = &tx_vjchat_pi1[uid]={field:uid}&tx_vjchat_pi1[view]=session
+				typolink.additionalParams.insertData = 1
+				insertData = 1
+				if.isTrue.field = entriesCount
+				wrap = <p>|</p>
+			}
+
+		}
+
+		# used in view session
+		# available fields are uid, username, entry, type
+		entry = COA
+		entry {
+
+			1 = COA
+			1 {
+
+				10 = TEXT
+				10.value = <span class="tx-vjchat-user">{field:username}</span>&gt;&nbsp;{field:entry}
+				10.insertData = 1
+				
+				10.innerWrap.cObject = CASE
+				10.innerWrap.cObject {
+					1 = TEXT
+					1.value = <div class="tx-vjchat-moderator">|</div>
+					2 = TEXT
+					2.value = <div class="tx-vjchat-system">|</div>
+					3 = TEXT
+					3.value = <div class="tx-vjchat-expert">|</div>
+					default = TEXT
+					default.value = |
+					key.field = type
+				}
+				
+				40 = TEXT
+				40 {
+					value = Delete Message #{field:uid}
+					typolink.parameter.data = page:uid
+					typolink.addQueryString = 1
+					typolink.additionalParams = &tx_vjchat_pi1[entryId]={field:uid}&tx_vjchat_pi1[action]=delete
+					typolink.additionalParams.insertData = 1
+					if.isTrue.field = isModerator
+					insertData = 1
+					wrap = <p>|</p>
+				}
+
+				wrap = <div class="tx-vjchat-entry">|</div>
+
+			}
+						
+		}
+		
+	}
+	
+	###############################################################################################################
+	# THE VIEWS
+	###############################################################################################################
+	# rooms: overview of rooms
+	# sessions: overview of sessions of one room
+	# session: view of one session with messages
+	# each view can have stdWrap properties
+	views {
+		
+		rooms {
+			oneRoom < plugin.tx_vjchat_pi1.cObjects.room
+			stdWrap.wrap = <div class="tx-vjchat-rooms">|<br /></div>
+
+			usersGlue = ,&nbsp;
+			
+			# field userType (expert, moderator, superuser, user) and all feusers data is available here
+			users_stdWrap {	
+				wrap = 
+				typolink.parameter = 
+			}
+			
+			stdWrap.postCObject = COA
+			stdWrap.postCObject {
+				20 = TEXT
+				20.data = LLL:EXT:vjchat/pi1/locallang.php:close_window
+				20.typolink.parameter = javascript:window.close();
+				20.typolink.ATagParams = onClick="window.close();" 
+				20.if.isTrue.field = popup
+			}
+
+		}
+				
+		# this is just another rooms overview
+		roomsShort {
+			oneRoom < plugin.tx_vjchat_pi1.cObjects.roomShort
+			stdWrap.wrap = <div class="tx-vjchat-rooms-short">|</div>
+			
+			usersGlue = ,&nbsp;
+			
+			# field userType (expert, moderator, superuser, user) and all feusers data is available here
+			users_stdWrap {	
+				stdWrap.wrap = 
+				typolink.parameter = 
+				#insertData = 1
+			}
+			
+		}
+				
+		sessions {
+
+			oneSession < plugin.tx_vjchat_pi1.cObjects.session
+
+
+
+			stdWrap.preCObject = COA
+			stdWrap.preCObject {
+				1 = TEXT
+				1.dataWrap = <h2>{field:room.name}</h2><p>{field:room.description}</p>
+				
+				2 = TEXT
+				2.data = LLL:EXT:vjchat/pi1/locallang.php:back_to_rooms
+				2.typolink.parameter.data = page:uid
+				2.wrap = <p>|</p>
+			}
+
+
+			stdWrap.wrap = <div class="tx-vjchat-sessions">|<br /><br /></div>
+			stdWrap.insertData = 1
+			
+			
+		}		
+
+		# additional available fields are roomName, roomDescription
+		session {
+			oneEntry < plugin.tx_vjchat_pi1.cObjects.entry
+
+
+			# this will be prepended to content
+			stdWrap.preCObject = COA
+			stdWrap.preCObject {
+
+				10 = TEXT
+				10.value = <h2>{field:room.name}</h2>
+				10.insertData = 1
+	
+				20 = TEXT
+				20.dataWrap = <p>{field:room.description}</p>
+				20.if.isTrue.field = room.description
+
+				30 = TEXT
+				30.data = LLL:EXT:vjchat/pi1/locallang.php:back_to_sessions
+				30.typolink.parameter.data = page:uid
+				30.typolink.additionalParams = &tx_vjchat_pi1[uid]={field:room.uid}&tx_vjchat_pi1[view]=sessions
+				30.typolink.additionalParams.insertData = 1
+				30.wrap = <p>|</p>
+
+				# use CObject session, but clear the typolink
+				40 < plugin.tx_vjchat_pi1.cObjects.session
+				40.40 >
+
+			}
+
+			
+
+			stdWrap.wrap = <div class="tx-vjchat-session">|<br /></div>
+
+#			stdWrap.wrap = <div class="tx-vjchat-session"> <h2>{field:roomName}</h2><h3>{field:name}</h3>|</div>
+#			stdWrap.insertData = 1
+
+		}
+		
+		chat {
+
+			stdWrap.preCObject = COA
+			stdWrap.preCObject {
+				10 = TEXT
+				10.field = name
+				10.wrap = <h2>|</h2>
+				10.required = 1
+				
+				15 = TEXT
+				15.field = description
+				15.wrap = <p>|</p>
+				15.required = 1
+				
+				20 = TEXT
+				20.data = LLL:EXT:vjchat/pi1/locallang.php:error_room_full
+				20.wrap = <p class="error">|</p>
+				20.if.isTrue.field = isFull 				
+				
+				25 = TEXT
+				25.value = <div id="tx-vjchat-full-jsstatus"></div>
+				
+				30 = COA
+				30 {
+				
+					10 = TEXT
+					10.data = LLL:EXT:vjchat/pi1/locallang.php:leave_chat
+					10.typolink.parameter.data = page:uid
+					10.typolink.additionalParams = &tx_vjchat_pi1[leaveRoom]={field:uid}
+					10.typolink.additionalParams.insertData = 1
+					10.if.isTrue.field = leaveChat
+				
+					20 = TEXT
+					20.data = LLL:EXT:vjchat/pi1/locallang.php:close_window
+					20.typolink.parameter = javascript:window.close();
+					20.typolink.ATagParams = onClick="window.close();" 
+					20.if.isTrue.field = popup
+									
+					30 = TEXT
+					30.data = LLL:EXT:vjchat/pi1/locallang.php:new_window
+					30.typolink.parameter.dataWrap = javascript:tx_vjchat_openNewChatWindow('{field:newWindowUrl}',{field:uid});
+					30.typolink.ATagParams.stdWrap.dataWrap = onClick="tx_vjchat_openNewChatWindow('{field:newWindowUrl}',{field:uid}); return false;" 
+					30.if.isTrue.field = chatwindow
+					30.wrap = &nbsp;|
+
+					stdWrap.wrap = <p>|</p>
+				}
+
+			}
+
+			stdWrap.wrap = <div class="tx-vjchat-chat text">|<br /></div>		
+			
+		}		
+
+		# this is the view when 'overallusercount' is choosen from flexform
+		# available fields are overallChatUserCount and targetpid
+		overallChatUserCount = COA
+		overallChatUserCount {
+			1 = TEXT
+			1.value = {field:overallChatUserCount} Users are chatting now.
+			1.insertData = 1
+			1.if.isTrue.field = overallChatUserCount
+			1.typolink.parameter.field = targetpid
+		}
+		
+	
+	}
+	
+	errorMessagesStdWrap.wrap = <p class="tx-vjchat-error">|</p>
+	
+	
+	###############################################################################################################
+	# POPUP CONFIGURATION
+	###############################################################################################################
+	
+	# Note: popup page object (chatwindow) is experimental and only used if no popup page is defined in the flexform
+	# will open the same page
+	chatwindow.typeNum = 0
+#	chatwindow = PAGE
+#	chatwindow.typeNum = 10
+#	chatwindow.10 < styles.content.get
+#	chatwindow.10 =< plugin.tx_vjchat_pi1
+
+	chatPopupJSWindowParams = width=600,height=600,status=1,resizable=1,location=1
+	
+	# USERLIST LABELS /stdWrap
+	userlistPMContent = &nbsp;PM&nbsp;
+	userlistPRContent = &nbsp;PR&nbsp;
+	
+	###############################################################################################################
+	# Snippets are a new feature for customizing the userlist and tooltip
+	###############################################################################################################
+	
+	# activate/deactivate snippet usage
+	useSnippets = 1
+	
+	# USERLIST SNIPPET
+	# This snippet is generated upon entering chat and stored in db for ajax recall 
+	# There are all fields available that you have defined in the room's form (Show additional information about Users)
+	# 'username' and 'image' are always available
+	userlistSnippet = COA
+	userlistSnippet {
+		
+		10 = IMAGE
+		10.file {
+			import.field = image
+				# important! this is the path to the uploaded images
+			import = uploads/pics/
+			import.listNum = 0
+			width = 20c
+			height = 20c
+		}
+		10.if.isTrue.field = image
+
+		20 = IMAGE
+		20.file = EXT:vjchat/pi1/icons/icon_user.gif
+		20.if.isFalse.field = image
+		
+		30 = TEXT
+		30.dataWrap = {field:username}
+		
+	}
+	
+	# TOOLTIP SNIPPET
+	# This snippet is generated upon entering chat and stored in db for ajax recall 
+	# There are all fields available that you have defined in the room's form (Show additional information about Users)
+	# 'username' and 'image' are always available
+	tooltipSnippet = COA
+	tooltipSnippet {
+	
+		10 = IMAGE
+		10.file {
+			import.field = image
+			import = uploads/pics/
+			import.listNum = 0
+			width = 40c
+			height = 40c
+		}		
+		
+		30 = TEXT 
+		30.field = username
+		30.wrap = <span id="tx-vjchat-user-detail-caption">|</span><br />
+
+		40 = COA
+		40 {
+			# This is just an example, add as much you need
+			# But don't forget to add the fieldnames in the room's form in the backend!
+			10 = TEXT 
+			10.field = company
+			10.wrap = <br />
+			10.if.isTrue.field = company
+		}
+		
+		40.stdWrap.wrap = <span id="tx-vjchat-user-detail-body">|</span>
+
+	}
+
+	###############################################################################################################
+	# Sound Support
+	###############################################################################################################
+	
+	soundSupport {
+		message.dataWrap = {path:EXT:vjchat/pi1/sounds/Message.mp3}
+		userListChange.dataWrap = {path:EXT:vjchat/pi1/sounds/UserlistChange.mp3}
+		extraJS = TEXT
+		extraJS.value (
+			soundManager.url = "{path:EXT:vjchat/pi1/soundmanager2/soundmanager2.swf}";
+			soundManager.debugMode = false;
+			soundManager.consoleOnly = true;
+		)
+		extraJS.insertData = 1
+		
+	}
+	
+	###############################################################################################################
+	# Message Styles
+	###############################################################################################################
+	
+	# message styles 
+	messageStyles {
+
+		# default style selector
+		# .tx-vjchat-message-style-0
+		default = IMAGE
+		default {
+			params = id="tx-vjchat-style-btn-{field:number}" style="cursor:pointer;" onclick="javascript:chat_instance.setMessageStyle({field:number});"
+			stdWrap.insertData = 1
+			
+			file = GIFBUILDER
+			file {
+				XY = 28,8
+				backColor = #000000
+			}
+		}
+		
+		# define special styles (as much as you need starting with 1,2,3...)
+		# make sure to define equivalent css with .tx-vjchat-message-style-[NUMBER]
+		1 < .default
+		1.file.backColor = #000055
+
+		2 < .default
+		2.file.backColor = #008000
+
+		3 < .default
+		3.file.backColor = #FF0000
+
+		4 < .default
+		4.file.backColor = #800000
+
+		5 < .default
+		5.file.backColor = #800080
+
+		6 < .default
+		6.file.backColor = #FF5500
+
+		7 < .default
+		7.file.backColor = #FFFF00
+
+		8 < .default
+		8.file.backColor = #00FF00
+
+		9 < .default
+		9.file.backColor = #008080
+
+		10 < .default
+		10.file.backColor = #00FFFF
+
+		11 < .default
+		11.file.backColor = #0000FF
+
+		12 < .default
+		12.file.backColor = #FF00FF
+
+		13 < .default
+		13.file.backColor = #7F7F7F
+
+		14 < .default
+		14.file.backColor = #D2D2D2
+	
+	}
+	
+	###############################################################################################################
+	# USER COLORS
+	###############################################################################################################
+	
+	# every user will have one random color from the following list 
+	userColors = #CCCCCC,#000000,#3636B2,#2A8C2A,#C33B3B,#C73232,#80267F,#66361F,#D9A641,#3DCC3D,#1A5555,#2F8C74,#4545E6,#B037B0,#4C4C4C,#959595
+	
+	
+	
+	###############################################################################################################
+	# CHAT BUTTON BAR
+	###############################################################################################################
+	
+	# the buttons within the "control panel" of the chat window
+	#chatbuttons = COA 
+	chatbuttons {
+		10 = IMAGE
+		10 {
+			file = EXT:vjchat/pi1/icons/icon_b.gif
+			height = 30m
+			params = id="tx-vjchat-button-b" onClick="javascript:chat_instance.addSelText('[b]','[/b]');"
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.bold
+		}
+		20 = IMAGE
+		20 {
+			file = EXT:vjchat/pi1/icons/icon_i.gif
+			height = 30m
+			params = id="tx-vjchat-button-i" onClick="javascript:chat_instance.addSelText('[i]','[/i]');"
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.italic			
+		}
+		30 = IMAGE
+		30 {
+			file = EXT:vjchat/pi1/icons/icon_u.gif
+			height = 30m
+			params = id="tx-vjchat-button-u" onClick="javascript:chat_instance.addSelText('[u]','[/u]');"
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.underlined			
+		}
+		40 = IMAGE
+		40 {
+			file = EXT:vjchat/pi1/icons/icon_s.gif
+			height = 30m
+			params = id="tx-vjchat-button-s" onClick="javascript:chat_instance.addSelText('[s]','[/s]');"
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.stroke			
+		}
+
+		50 = IMAGE
+		50 {
+			file = EXT:vjchat/pi1/icons/icon_email.gif
+			height = 30m
+			params = id="tx-vjchat-button-email" onClick="javascript:chat_instance.addSelText('[email]','[/email]');"
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.email			
+		}
+		60 = IMAGE
+		60 {
+			file = EXT:vjchat/pi1/icons/icon_http.gif
+			height = 30m
+			params = id="tx-vjchat-button-http" onClick="javascript:chat_instance.addSelText('[url]','[/url]');"
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.http			
+		}
+
+		70 = IMAGE
+		70 {
+			file = EXT:vjchat/pi1/icons/icon_clock.gif
+			height = 30m
+			params = id="tx-vjchat-button-clock" onClick="javascript:chat_instance.toggleAllTime();"
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.clock_on
+			stdWrap.wrap = <span id="tx-vjchat-button-clock-container">|</span>
+			stdWrap.if.isTrue.field = enableTime
+		}																
+		80 = IMAGE
+		80 {
+			file = EXT:vjchat/pi1/icons/icon_usercolors.gif
+			height = 30m
+			params = id="tx-vjchat-button-usercolors" onClick="javascript:chat_instance.toggleUserColor();"
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.usercolor_on
+			stdWrap.wrap = <span id="tx-vjchat-button-usercolors-container">|</span>
+			stdWrap.if.isTrue.field = enableUsercolors			
+		}
+		90 = IMAGE
+		90 {
+			file = EXT:vjchat/pi1/icons/icon_smilies.gif
+			height = 30m
+			params = id="tx-vjchat-button-emoticons" onClick="javascript:chat_instance.toggleEmoticons();"
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.smilies_on		
+			stdWrap.wrap = <span id="tx-vjchat-button-emoticons-container">|</span>
+			stdWrap.if.isTrue.field = enableEmoticons			
+		}
+		100 = IMAGE
+		100 {
+			file = EXT:vjchat/pi1/icons/icon_colors.gif
+			height = 30m
+			params = id="tx-vjchat-button-styles" onClick="javascript:chat_instance.toggleStyle();"
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.colors_on	
+			stdWrap.wrap = <span id="tx-vjchat-button-styles-container">|</span>			
+			stdWrap.if.isTrue.field = enableUserstyles			
+
+		}
+
+		101 = IMAGE
+		101 {
+			file = EXT:vjchat/pi1/icons/icon_enablesound.gif
+			height = 30m
+			params = id="tx-vjchat-button-enablesound" onClick="javascript:chat_instance.toggleEnableSound();"
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.enablesound_on
+			stdWrap.wrap = <span id="tx-vjchat-button-enablesound-container">|</span>			
+			stdWrap.if.isTrue.field = enableSound
+		}		
+		
+		105 = IMAGE
+		105 {
+			file = EXT:vjchat/pi1/icons/icon_autofocus.gif
+			height = 30m
+			params = id="tx-vjchat-button-autofocus" onClick="javascript:chat_instance.toggleAutoFocus();"
+			#stdWrap.typolink.parameter.dataWrap = javascript:chat_instance.helpInNewWindow();
+			stdWrap.wrap = <span id="tx-vjchat-button-autofocus-container">|</span>
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.autofocus_on
+			stdWrap.if.isTrue.field = popup
+		}
+		
+		106 = IMAGE
+		106 {
+			file = EXT:vjchat/pi1/icons/icon_newwindow.gif
+			height = 30m
+			params = id="tx-vjchat-button-newwindow" onClick="javascript:chat_instance.newWindow();"
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:new_window
+			stdWrap.if.isFalse.field = popup
+		}		
+
+		110 = IMAGE
+		110 {
+			file = EXT:vjchat/pi1/icons/icon_help.gif
+			height = 30m
+			params = id="tx-vjchat-button-help" onClick="javascript:chat_instance.sendMessage('/help');"
+			#stdWrap.typolink.parameter.dataWrap = javascript:chat_instance.helpInNewWindow();
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.help			
+		}			
+	
+	}
+	
+	# a convention is to name the cObjs like the id of the container
+	# e.g. container name: tx-vjchat-button-clock-container => tx_vjchat_button_clock
+	chatbuttons_on {
+
+		tx_vjchat_button_clock = IMAGE
+		tx_vjchat_button_clock {
+			file = EXT:vjchat/pi1/icons/icon_clock_on.gif
+			height = 30m
+			params = id="tx-vjchat-icon-clock-on" onClick="javascript:chat_instance.toggleAllTime();"
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.clock_off
+		}																
+		
+		tx_vjchat_button_usercolors = IMAGE
+		tx_vjchat_button_usercolors {
+			file = EXT:vjchat/pi1/icons/icon_usercolors_on.gif
+			height = 30m
+			params = id="tx-vjchat-icon-usercolors-on" onClick="javascript:chat_instance.toggleUserColor();"
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.usercolor_off
+		}
+		
+		tx_vjchat_button_emoticons = IMAGE
+		tx_vjchat_button_emoticons {
+			file = EXT:vjchat/pi1/icons/icon_smilies_on.gif
+			height = 30m
+			params = id="tx-vjchat-icon-emoticons-on" onClick="javascript:chat_instance.toggleEmoticons();"
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.smilies_off
+		}
+		
+		tx_vjchat_button_styles = IMAGE
+		tx_vjchat_button_styles {
+			file = EXT:vjchat/pi1/icons/icon_colors_on.gif
+			height = 30m
+			params = id="tx-vjchat-icon-styles-on" onClick="javascript:chat_instance.toggleStyle();"
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.colors_off	
+		}
+		
+		tx_vjchat_button_enablesound = IMAGE
+		tx_vjchat_button_enablesound {
+			file = EXT:vjchat/pi1/icons/icon_enablesound_on.gif
+			height = 30m
+			params = id="tx-vjchat-icon-enablesound-on" onClick="javascript:chat_instance.toggleEnableSound();"
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.enablesound_off	
+		}		
+
+		tx_vjchat_button_autofocus = IMAGE
+		tx_vjchat_button_autofocus {
+			file = EXT:vjchat/pi1/icons/icon_autofocus_on.gif
+			height = 30m
+			params = id="tx-vjchat-button-autofocus" onClick="javascript:chat_instance.toggleAutoFocus();"
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.autofocus_off
+		}			
+	
+	}
+
+	###############################################################################################################
+	# THE STYLES
+	###############################################################################################################
+	
+	_CSS_DEFAULT_STYLE (
+
+	/* FRAME AND MAIN CONTAINERS */
+
+		div#tx-vjchat-container * {
+			border: 0;
+			margin: 0;
+			padding: 1px;
+		}
+		
+		div#tx-vjchat-container {
+			min-height: 20px;
+		}
+		
+		div#tx-vjchat-content {
+			height: 20em;  
+			position: relative;
+			margin-top: 0.5em;
+			width: 99%;
+		}		
+		
+		div#tx-vjchat-loadinginfo {
+			position: absolute;
+			width: 250px;
+			height: 2em;
+			padding: 2em;
+			border: 1px solid #CFCFCF;
+			background-color: #fff;
+			left:50%;
+			margin-left:-120px;
+			margin-top: 5%;
+			text-align: center;
+			z-index: 1000;
+			filter:alpha(opacity=80);
+			-moz-opacity:0.8;
+			-khtml-opacity: 0.8;
+			opacity: 0.8;			
+		}
+		
+		div#tx-vjchat-messages {
+			position: absolute;
+			left: 0;
+			top: 0;
+			border: 1px solid #CFCFCF;
+			overflow: auto;
+			width: 68%;
+			background-color: #fff;
+		}
+	
+		div#tx-vjchat-storedMessages {
+			position: absolute;
+			left: -1px;
+			top: -1px;
+			border: 1px solid #CFCFCF;
+			overflow: auto;
+			width: 68%;
+			background-color: #fff;
+			border: 2px solid #82C885;
+			z-index:100;
+		}	
+		div#tx-vjchat-userlist {
+			position: absolute;
+			right: 0;
+			top: 0;
+			padding: 0;
+			overflow: auto;
+			border: #CFCFCF solid 1px;
+			color: #000;
+			background-color: #FFF;
+			width: 30%;
+			height: 20em;
+		}		
+		
+		div#tx-vjchat-tools-container {
+			margin-top: 0.2em;
+			
+		}
+
+		div#tx-vjchat-format,
+		div#tx-vjchat-format a,
+		div#tx-vjchat-format img {
+			margin: 0;
+			padding: 0;
+			cursor: pointer;
+		}
+
+		div#tx-vjchat-emoticons {
+			padding: 0.2em 0 0 0.2em;
+			height: 20px;
+		}
+		
+		#tx-vjchat-emoticons img {
+			margin: 0 0.1em;
+			cursor:pointer;
+		}		
+		
+		div#tx-vjchat-style {
+			padding: 0.2em 0.2em 0.2em 0.265em;
+		}
+		
+		div#tx-vjchat-input-container {
+			clear:both;
+		}
+
+		textarea#txvjchatnewMessage {
+			width: 99%;
+			font-family: "Arial", "Helvetica", sans-serif;
+			font-size: 10pt;
+			height: 6em;
+			border: #CFCFCF solid 1px;
+			margin: 0;
+		}	
+		
+		#tx-vjchat-debug {
+			width: 99%;
+			height: 200px; 
+			border: 1px solid silver; 
+			font-family: Courier New, Courier; 
+			font-size: 8pt; 
+			overflow:auto; 
+		}
+	
+
+	
+	/* MESSAGE ITEMS */
+	
+		div.tx-vjchat-entry {
+			border-bottom: 1px solid #FAF7F3;
+			background-color: #fff;		
+			font-family: "Arial", "Helvetica", sans-serif;
+			font-size: 10pt;
+			/*line-height: 1.3em;*/
+			color: #320101;
+			/*margin: 0.25em 0 0 0;
+			padding: 0em 0 0.625em 0.25em;*/
+		}
+	
+		div.tx-vjchat-moderator {
+			color: #880000;
+		}
+		
+		div.tx-vjchat-expert {
+			color: #06480E;
+		}
+
+
+		.tx-vjchat-superuser {
+			background-color: #FFE4E4;
+		}		
+		
+		div.tx-vjchat-entry span.tx-vjchat-user {
+			font-weight: bold;
+		}
+
+		div.tx-vjchat-system,
+		div.tx-vjchat-system .tx-vjchat-entry {
+			color: #9E9E9E;
+			font-size: 0.9em;
+			font-style: italic;			
+		}		
+		div.tx-vjchat-hidden {
+			background-color: #F2F2F2;
+			color: #9E9E9E;
+		}
+		
+		div.tx-vjchat-committed {
+			background-color: #B8F2AE;
+		}
+	
+		span.tx-vjchat-time {
+			font-size: 8pt;
+			color: #9E9E9E;
+		}
+		
+		span.tx-vjchat-bold {
+			font-weight: bold;
+		}
+	
+		span.tx-vjchat-underlined {
+			text-decoration: underline;
+		}
+
+		span.tx-vjchat-italic {
+			font-style: italic;
+		}
+
+		span.tx-vjchat-stroke {
+			text-decoration: line-through;
+		}		
+
+		p.tx-vjchat-error {
+			font-weight: bold;
+			color: #f00;
+		}
+		
+		a.tx-vjchat-actionlink {
+			cursor:pointer;
+			font-size: 8pt;
+			color: #337236;
+		}
+		
+		a.tx-vjchat-actionlink:hover {
+			color: #0F3D11;
+			text-decoration: underline;
+		}
+	
+	/* SELECTABLE USER STYLES */
+		
+		/* if you do not want to colorize usernames like style use
+			.tx-vjchat-message-style-0  .tx-vjchat-entry {
+				color: #000000;
+			}
+		*/
+		.tx-vjchat-message-style-0   {
+			color: #000000;
+		}
+		.tx-vjchat-message-style-1 {
+			color: #000055;
+		}
+		.tx-vjchat-message-style-2 {
+			color: #008000;
+		}
+		.tx-vjchat-message-style-3 {
+			color: #FF0000;
+		}
+		.tx-vjchat-message-style-4 {
+			color: #800000;
+		}
+		.tx-vjchat-message-style-5 {
+			color: #800080;
+		}
+		.tx-vjchat-message-style-6 {
+			color: #FF5500;
+		}
+		.tx-vjchat-message-style-7 {
+			color: #FFFF00;
+		}
+		.tx-vjchat-message-style-8 {
+			color: #00FF00;
+		}
+		.tx-vjchat-message-style-9  {
+			color: #008080;
+		}
+		.tx-vjchat-message-style-10 {
+			color: #00FFFF;
+		}
+		.tx-vjchat-message-style-11 {
+			color: #0000FF;
+		}
+		.tx-vjchat-message-style-12 {
+			color: #FF00FF;
+		}
+		.tx-vjchat-message-style-13 {
+			color: #7F7F7F;
+		}
+		.tx-vjchat-message-style-14 {
+			color: #D2D2D2;
+		}
+
+
+	/* HELP AND COMMAND OUTPUT */
+	
+
+		.tx-vjchat-ok {
+			color: #06480E;
+			background-color: #F0F0F0;
+		}
+		
+		.tx-vjchat-error {
+			color: #f00;
+		}
+		
+		div.tx-vjchat-cmd-smileys-text {
+			width: 5em;
+			height: 1.2em;
+			float: left;
+			background-color: #F0F0F0;
+			margin-bottom: 0.625em;
+			text-align: right;		
+			padding-right: 0.625em;
+		}
+	
+		div.tx-vjchat-cmd-smileys-image {
+			width: 4em;
+			height: 1.2em; 		
+			float: left;
+			background-color: #F0F0F0;
+			margin-bottom: 0.625em;
+		}
+
+		div.tx-vjchat-cmd-help,
+		div.tx-vjchat-cmd-help * {
+			font-size: 0.95em;
+			background-color: #F0F0F0;			
+		}
+		
+		div.tx-vjchat-cmd-help div.tx-vjchat-cmd-help-command {
+		}
+				
+		span.tx-vjchat-cmd-help-link {
+			text-decoration: underline;
+			cursor: pointer;
+		}
+		
+		div.tx-vjchat-cmd-help-command div.tx-vjchat-cmd-help-command-title {
+			width: 9em;
+			float: left;
+			clear: left;
+			font-weight: bold;
+		}
+
+		div.tx-vjchat-cmd-help-command span.tx-vjchat-cmd-help-command-descr {
+			/*display: block;
+			margin-left: 10em;*/
+		}
+
+		div.tx-vjchat-cmd-help-command span.tx-vjchat-cmd-help-parameter-list {
+		}
+
+		div.tx-vjchat-cmd-help-command span.tx-vjchat-cmd-help-parameter-descr {
+			display: block;
+			margin-left: 11em;		
+		}
+
+	/* USERLIST ITEMS */
+
+		#tx-vjchat-userlist * {
+			font-family: "Arial", "Helvetica", sans-serif;
+			font-size: 0.9em;
+		}
+		
+		#tx-vjchat-userlist .tx-vjchat-link-box {
+			display: block;
+			width: 50px;
+			float: right;			
+		}
+		
+		
+		#tx-vjchat-userlist .tx-vjchat-pr-link,
+		#tx-vjchat-userlist .tx-vjchat-pm-link {
+			font-size: 0.8em;
+			cursor: pointer;			
+		}
+
+		#tx-vjchat-userlist .tx-vjchat-userlist-moderator {
+			color: #880000;
+		}
+	
+		#tx-vjchat-userlist .tx-vjchat-userlist-expert {
+			color: #06480E;
+		}
+	
+
+		#tx-vjchat-userlist .tx-vjchat-userlist-superuser {
+			background-color: #FFE4E4;
+		}
+		
+		#tx-vjchat-userlist .tx-vjchat-userlist-username {
+			font-weight: bold;
+			cursor: pointer;
+			float:left;
+		}
+
+		#tx-vjchat-userlist .tx-vjchat-userlist-user,
+		#tx-vjchat-userlist .tx-vjchat-userlist-moderator,
+		#tx-vjchat-userlist .tx-vjchat-userlist-expert,
+		#tx-vjchat-userlist .tx-vjchat-userlist-owner,		
+		#tx-vjchat-userlist .tx-vjchat-userlist-superuser {
+		}
+
+		#tx-vjchat-userlist .tx-vjchat-userlist-owner,
+		#tx-vjchat-userlist .tx-vjchat-userlist-moderator,
+		#tx-vjchat-userlist .tx-vjchat-userlist-superuser {
+			font-weight: bold;
+			font-style: italic;
+		}
+
+		#tx-vjchat-userlist .tx-vjchat-userlist-item img,
+		#tx-vjchat-user-detail img {
+			float: left;
+			margin-right: 2px;
+		}
+		
+		#tx-vjchat-userlist .tx-vjchat-userlist-item {
+			clear: both;
+			height: 20px;
+			border-bottom: 1px solid #FBFBFB;
+		}		
+		
+		#tx-vjchat-userlist .tx-vjchat-userlist-item:hover {
+			font-weight: bold;
+		}
+
+		#tx-vjchat-user-detail {
+			border: 1px solid #CFCFCF;
+			background-color: #fff;
+			width: 12em;
+			padding: 0.8em;			
+			filter:alpha(opacity=80);
+			z-index: 10000;
+			-moz-opacity:0.8;
+			-khtml-opacity: 0.8;
+			opacity: 0.8;
+		}
+		
+		
+		#tx-vjchat-user-detail * {
+			font-family: "Arial", "Helvetica", sans-serif;
+			font-size: 0.8em;
+			padding: 0;
+			margin: 0;		
+		}
+
+		#tx-vjchat-user-detail #tx-vjchat-user-detail-caption {
+			font-size: 0.8em;
+			font-weight: bold;
+		}
+		
+		.tx-vjchat-rooms-short a img {
+			margin-right: 0.2em !important;
+			padding: 0 !important;
+			border: 0;
+		}
+	)
+
+}
+
+# for the popup PAGE object
+chatwindow < plugin.tx_vjchat_pi1.chatwindow
+
+
+includeLibs.vjchat = EXT:vjchat/pi1/class.tx_vjchat_userFunctions.php
