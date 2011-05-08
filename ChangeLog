@@ -1,3 +1,12 @@
+11-05-08 0.3.4 Vincent Tietz
+* [fix] problem with loading chat in IE8
+* [fix] loading language files
+* [add] emptyTitleHandling = useAlt for tooltips in FF and Chrome
+* [contributor] Joerg Wagner - Digilog multimedia
+
+0.3.3 Vincent Tietz
+* [fix] security issues
+
 08-05-23 0.3.2 Vincent Tietz
 * [add] Image for each chat room (available with field:image)
 * [add] sound support 
