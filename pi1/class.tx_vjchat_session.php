@@ -18,26 +18,26 @@ class tx_vjchat_session {
 	
 
 	function fromArray($array) {
-		$this->uid = $array['uid'];
+		$this->uid = intval($array['uid']);
 		$this->name = $array['name'];
 		$this->description = $array['description'];
 		$this->public = $array['hidden'];
 		$this->room = $array['room'];
-		$this->startid = $array['startid'];
-		$this->endid = $array['endid'];
+		$this->startid = intval($array['startid']);
+		$this->endid = intval($array['endid']);
 
 	}
 
 	function toArray() {
 
 		$theValue = array(
-			'uid' => $this->uid,
+			'uid' => intval($this->uid),
 			'name' => $this->name,
 			'description' => $this->description,
 			'hidden' => $this->public,
 			'room' => $this->room,
-			'startid' => $this->startid,
-			'endid' => $this->endid,
+			'startid' => intval($this->startid),
+			'endid' => intval($this->endid),
 		);
 
 		return $theValue;

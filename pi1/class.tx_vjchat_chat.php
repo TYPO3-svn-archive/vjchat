@@ -83,9 +83,9 @@ class tx_vjchat_chat {
 		$this->env['msg'] = str_replace('>', '&gt;', $this->env['msg']);
 
 		$this->env['action'] = htmlspecialchars(t3lib_div::_GP('a'));
-		$this->env['lastid'] = htmlspecialchars(t3lib_div::_GP('t'));
-		$this->env['uid'] = htmlspecialchars(t3lib_div::_GP('uid'));
-		$this->env['usercolor'] = htmlspecialchars(t3lib_div::_GP('uc'));
+		$this->env['lastid'] = intval(t3lib_div::_GP('t'));
+		$this->env['uid'] = intval(t3lib_div::_GP('uid'));
+		$this->env['usercolor'] = intval(t3lib_div::_GP('uc'));
 		$this->env['LLKey'] = htmlspecialchars(t3lib_div::_GP('l'));		
 
 		$this->lang = t3lib_div::makeInstance('language');

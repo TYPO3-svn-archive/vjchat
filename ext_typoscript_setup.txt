@@ -677,6 +677,7 @@ plugin.tx_vjchat_pi1 {
 			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.stroke			
 		}
 
+/* temporary removed since xss risk
 		50 = IMAGE
 		50 {
 			file = EXT:vjchat/pi1/icons/icon_email.gif
@@ -691,6 +692,7 @@ plugin.tx_vjchat_pi1 {
 			params = id="tx-vjchat-button-http" onClick="javascript:chat_instance.addSelText('[url]','[/url]');"
 			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.http			
 		}
+*/
 
 		70 = IMAGE
 		70 {

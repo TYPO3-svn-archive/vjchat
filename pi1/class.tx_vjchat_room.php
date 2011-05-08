@@ -37,8 +37,8 @@ class tx_vjchat_room {
 	
 
 	function fromArray($array) {
-		$this->uid = $array['uid'];
-		$this->pid = $array['pid'];
+		$this->uid = intval($array['uid']);
+		$this->pid = intval($array['pid']);
 		$this->hidden = $array['hidden'] ?  true : false;
 		$this->fe_group = $array['fe_group'];
 
@@ -68,8 +68,8 @@ class tx_vjchat_room {
 	function toArray() {
 
 		$theValue = array(
-			'uid' => $this->uid,
-			'pid' => $this->pid,
+			'uid' => intval($this->uid),
+			'pid' => intval($this->pid),
 			'hidden' => $this->hidden ? 1 : 0,						
 			'fe_group' => $this->fe_group,			
 			'name' => $this->name,

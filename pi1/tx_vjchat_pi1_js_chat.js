@@ -705,6 +705,7 @@ function tx_vjchat_pi1_js_chat() {
 	}
 	
 	this.createNewUserNode = function(value) {
+
 		if(value == "")		// skip empty values
 			return;
 

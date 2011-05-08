@@ -211,9 +211,9 @@ class tx_vjchat_lib {
 				$text = str_replace($emoticon, $img, $text);
 			}
 			
-
-			$text = preg_replace('/\[email\](.*)\[\/email\]/i', '<span class="tx-vjchat-email"><a href="mailto:\1">\1</a></span>', $text);
-			$text = preg_replace('/\[url\](.*)\[\/url\]/i', '<span class="tx-vjchat-url"><a href="\1" target="_blank">\1</a></span>', $text);			
+			// temporary removed since xss risk
+			//$text = preg_replace('/\[email\](.*)\[\/email\]/i', '<span class="tx-vjchat-email"><a href="mailto:\1">\1</a></span>', $text);
+			//$text = preg_replace('/\[url\](.*)\[\/url\]/i', '<span class="tx-vjchat-url"><a href="\1" target="_blank">\1</a></span>', $text);			
 
 			$text = preg_replace('/\[b\](.*?)\[\/b\]/i', '<span class="tx-vjchat-bold">\1</span>', $text);
 			$text = preg_replace('/\[u\](.*?)\[\/u\]/i', '<span class="tx-vjchat-underlined">\1</span>', $text);
