@@ -654,6 +654,7 @@ plugin.tx_vjchat_pi1 {
 			height = 30m
 			params = id="tx-vjchat-button-b" onClick="javascript:chat_instance.addSelText('[b]','[/b]');"
 			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.bold
+			emptyTitleHandling = useAlt
 		}
 		20 = IMAGE
 		20 {
@@ -661,20 +662,23 @@ plugin.tx_vjchat_pi1 {
 			height = 30m
 			params = id="tx-vjchat-button-i" onClick="javascript:chat_instance.addSelText('[i]','[/i]');"
 			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.italic			
+			emptyTitleHandling = useAlt
 		}
 		30 = IMAGE
 		30 {
 			file = EXT:vjchat/pi1/icons/icon_u.gif
 			height = 30m
 			params = id="tx-vjchat-button-u" onClick="javascript:chat_instance.addSelText('[u]','[/u]');"
-			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.underlined			
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.underlined
+			emptyTitleHandling = useAlt			
 		}
 		40 = IMAGE
 		40 {
 			file = EXT:vjchat/pi1/icons/icon_s.gif
 			height = 30m
 			params = id="tx-vjchat-button-s" onClick="javascript:chat_instance.addSelText('[s]','[/s]');"
-			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.stroke			
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.stroke	
+			emptyTitleHandling = useAlt			
 		}
 
 /* temporary removed since xss risk
@@ -683,7 +687,8 @@ plugin.tx_vjchat_pi1 {
 			file = EXT:vjchat/pi1/icons/icon_email.gif
 			height = 30m
 			params = id="tx-vjchat-button-email" onClick="javascript:chat_instance.addSelText('[email]','[/email]');"
-			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.email			
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.email
+			emptyTitleHandling = useAlt
 		}
 		60 = IMAGE
 		60 {
@@ -691,6 +696,7 @@ plugin.tx_vjchat_pi1 {
 			height = 30m
 			params = id="tx-vjchat-button-http" onClick="javascript:chat_instance.addSelText('[url]','[/url]');"
 			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.http			
+			emptyTitleHandling = useAlt			
 		}
 */
 
@@ -700,6 +706,7 @@ plugin.tx_vjchat_pi1 {
 			height = 30m
 			params = id="tx-vjchat-button-clock" onClick="javascript:chat_instance.toggleAllTime();"
 			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.clock_on
+			emptyTitleHandling = useAlt
 			stdWrap.wrap = <span id="tx-vjchat-button-clock-container">|</span>
 			stdWrap.if.isTrue.field = enableTime
 		}																
@@ -709,6 +716,7 @@ plugin.tx_vjchat_pi1 {
 			height = 30m
 			params = id="tx-vjchat-button-usercolors" onClick="javascript:chat_instance.toggleUserColor();"
 			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.usercolor_on
+			emptyTitleHandling = useAlt			
 			stdWrap.wrap = <span id="tx-vjchat-button-usercolors-container">|</span>
 			stdWrap.if.isTrue.field = enableUsercolors			
 		}
@@ -717,7 +725,8 @@ plugin.tx_vjchat_pi1 {
 			file = EXT:vjchat/pi1/icons/icon_smilies.gif
 			height = 30m
 			params = id="tx-vjchat-button-emoticons" onClick="javascript:chat_instance.toggleEmoticons();"
-			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.smilies_on		
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.smilies_on
+			emptyTitleHandling = useAlt			
 			stdWrap.wrap = <span id="tx-vjchat-button-emoticons-container">|</span>
 			stdWrap.if.isTrue.field = enableEmoticons			
 		}
@@ -727,6 +736,7 @@ plugin.tx_vjchat_pi1 {
 			height = 30m
 			params = id="tx-vjchat-button-styles" onClick="javascript:chat_instance.toggleStyle();"
 			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.colors_on	
+			emptyTitleHandling = useAlt			
 			stdWrap.wrap = <span id="tx-vjchat-button-styles-container">|</span>			
 			stdWrap.if.isTrue.field = enableUserstyles			
 
@@ -738,6 +748,7 @@ plugin.tx_vjchat_pi1 {
 			height = 30m
 			params = id="tx-vjchat-button-enablesound" onClick="javascript:chat_instance.toggleEnableSound();"
 			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.enablesound_on
+			emptyTitleHandling = useAlt			
 			stdWrap.wrap = <span id="tx-vjchat-button-enablesound-container">|</span>			
 			stdWrap.if.isTrue.field = enableSound
 		}		
@@ -750,6 +761,7 @@ plugin.tx_vjchat_pi1 {
 			#stdWrap.typolink.parameter.dataWrap = javascript:chat_instance.helpInNewWindow();
 			stdWrap.wrap = <span id="tx-vjchat-button-autofocus-container">|</span>
 			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.autofocus_on
+			emptyTitleHandling = useAlt			
 			stdWrap.if.isTrue.field = popup
 		}
 		
@@ -759,6 +771,7 @@ plugin.tx_vjchat_pi1 {
 			height = 30m
 			params = id="tx-vjchat-button-newwindow" onClick="javascript:chat_instance.newWindow();"
 			altText.data = LLL:EXT:vjchat/pi1/locallang.php:new_window
+			emptyTitleHandling = useAlt			
 			stdWrap.if.isFalse.field = popup
 		}		
 
@@ -768,7 +781,8 @@ plugin.tx_vjchat_pi1 {
 			height = 30m
 			params = id="tx-vjchat-button-help" onClick="javascript:chat_instance.sendMessage('/help');"
 			#stdWrap.typolink.parameter.dataWrap = javascript:chat_instance.helpInNewWindow();
-			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.help			
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.help
+			emptyTitleHandling = useAlt			
 		}			
 	
 	}
@@ -783,6 +797,7 @@ plugin.tx_vjchat_pi1 {
 			height = 30m
 			params = id="tx-vjchat-icon-clock-on" onClick="javascript:chat_instance.toggleAllTime();"
 			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.clock_off
+			emptyTitleHandling = useAlt			
 		}																
 		
 		tx_vjchat_button_usercolors = IMAGE
@@ -791,6 +806,7 @@ plugin.tx_vjchat_pi1 {
 			height = 30m
 			params = id="tx-vjchat-icon-usercolors-on" onClick="javascript:chat_instance.toggleUserColor();"
 			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.usercolor_off
+			emptyTitleHandling = useAlt			
 		}
 		
 		tx_vjchat_button_emoticons = IMAGE
@@ -799,6 +815,7 @@ plugin.tx_vjchat_pi1 {
 			height = 30m
 			params = id="tx-vjchat-icon-emoticons-on" onClick="javascript:chat_instance.toggleEmoticons();"
 			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.smilies_off
+			emptyTitleHandling = useAlt
 		}
 		
 		tx_vjchat_button_styles = IMAGE
@@ -806,7 +823,8 @@ plugin.tx_vjchat_pi1 {
 			file = EXT:vjchat/pi1/icons/icon_colors_on.gif
 			height = 30m
 			params = id="tx-vjchat-icon-styles-on" onClick="javascript:chat_instance.toggleStyle();"
-			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.colors_off	
+			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.colors_off
+			emptyTitleHandling = useAlt			
 		}
 		
 		tx_vjchat_button_enablesound = IMAGE
@@ -815,6 +833,7 @@ plugin.tx_vjchat_pi1 {
 			height = 30m
 			params = id="tx-vjchat-icon-enablesound-on" onClick="javascript:chat_instance.toggleEnableSound();"
 			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.enablesound_off	
+			emptyTitleHandling = useAlt			
 		}		
 
 		tx_vjchat_button_autofocus = IMAGE
@@ -823,8 +842,8 @@ plugin.tx_vjchat_pi1 {
 			height = 30m
 			params = id="tx-vjchat-button-autofocus" onClick="javascript:chat_instance.toggleAutoFocus();"
 			altText.data = LLL:EXT:vjchat/pi1/locallang.php:chatbutton.autofocus_off
+			emptyTitleHandling = useAlt
 		}			
-	
 	}
 
 	###############################################################################################################

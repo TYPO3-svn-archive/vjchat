@@ -318,16 +318,3 @@ Array.prototype.inArray = function (value)
     }
     return false;
 };
-
-
-function tx_vjchat_addLoadEvent(func) {
-  var oldonload = window.onload;
-  if (typeof window.onload != 'function') {
-    window.onload = func;
-  } else {
-    window.onload = function() {
-      oldonload();
-      func();
-    }
-  }
-}

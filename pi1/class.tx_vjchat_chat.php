@@ -89,8 +89,8 @@ class tx_vjchat_chat {
 		$this->env['LLKey'] = htmlspecialchars(t3lib_div::_GP('l'));		
 
 		$this->lang = t3lib_div::makeInstance('language');
-		$this->lang->includeLLFile("EXT:vjchat/pi1/locallang.php");
 		$this->lang->init($this->env['LLKey']);
+		$this->lang->includeLLFile("EXT:vjchat/pi1/locallang.php");
 
 		$this->db = t3lib_div::makeInstance('tx_vjchat_db');
 		$this->db->lang = $this->lang;
