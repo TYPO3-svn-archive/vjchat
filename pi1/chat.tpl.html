@@ -1,0 +1,187 @@
+
+<!--###CHATROOM### begin-->
+
+###CSS_USERCOLORS###
+
+<div id="tx-vjchat-loadinginfo">
+###LOADING_MESSAGE###
+</div>
+
+<div id="tx-vjchat-user-detail" style="display:none; position: absolute; top: 0px; left: 0px; z-index: 1000; margin: 0;">
+	<div id="tx-vjchat-user-detail-caption"></div>
+	<div id="tx-vjchat-user-detail-body"></div>
+</div>
+
+<div id="tx-vjchat-container" style="height: 32em;">
+	<div id="tx-vjchat-content">
+		
+		<div id="tx-vjchat-messages" style="height: 20em;display:none;"></div>
+		<div id="tx-vjchat-userlist" style="display:none;"></div>
+		<div id="tx-vjchat-storedMessages" style="display:none; height: 10em;"></div>
+	
+	</div>
+
+<!--###TOOLS_CONTAINER### begin-->
+	<div id="tx-vjchat-tools-container" style="display:none;">
+		<!-- ###FORMAT_CONTAINER### begin-->
+			<div id="tx-vjchat-format">
+				###CHATBUTTONS###
+			</div>
+		<!-- ###FORMAT_CONTAINER### end-->
+		<!-- ###STYLING_CONTAINER### begin--><div id="tx-vjchat-style" style="display:none;">###STYLES###</div><!-- ###STYLING_CONTAINER### end-->
+		<!-- ###EMOTICONS_CONTAINER### begin--><div id="tx-vjchat-emoticons" style="display:none;">###EMOTICONS###</div><!-- ###EMOTICONS_CONTAINER### end-->
+	</div>
+<!--###TOOLS_CONTAINER### end-->
+	
+	<div id="tx-vjchat-input-container" style="display:none;"> 
+		<!-- label for="newMessage">###LABEL_NEW_MESSAGE###</label -->
+		<textarea id="txvjchatnewMessage" name="txvjchatnewMessage" rows="3" cols="40"></textarea>
+		<!--###SEND_BUTTON### begin --><button onClick="chat_instance.submitMessage()">###LABEL_SUBMIT###</button><!--###SEND_BUTTON### end -->
+	</div>
+
+	<pre id="tx-vjchat-debug" style="display:none;"></pre>
+
+</div>
+
+<script language="JavaScript" type="text/javascript">
+//<![CDATA[
+	// create chat
+	var chat_instance = new tx_vjchat_pi1_js_chat();
+
+	chat_instance.configuration = {
+		roomId : ###CHATROOM_ID###,
+		userId : "###USERID###",
+		scriptUrl : "###SCRIPTURL###",
+		leaveUrl : "###LEAVEURL###",
+		newWindowUrl : "###NEWWINDOWURL###",
+		initialId : ###INITIALID###,
+		charset : "###CHARSET###",
+		debugMode : "###DEBUG###",	
+		lang : "###LLKEY###",		
+		usernameGlue : "###USERNAMESGLUE###",
+		usernamesFieldGlue : "###USERNAMESFIELDGLUE###",
+		messagesGlue : "###MESSAGESGLUE###",
+		idGlue : "###IDGLUE###",
+		userColors : ###USERCOLORS###,
+		colorizeNicks : ###COLORIZE_NICKS###,
+		showTime : ###SHOW_TIME###,
+		showEmoticons : ###SHOW_EMOTICONS###,
+		showStyles : ###SHOW_STYLES###,
+		refreshMessagesTime	: ###REFRESH_MESSAGES_TIME###,				
+		refreshUserlistTime	: ###REFRESH_USERLIST_TIME###,					
+		inputElement : $('txvjchatnewMessage'),				
+		messagesElement : $('tx-vjchat-messages'),
+		storedMessagesElement : $('tx-vjchat-storedMessages'),
+		stylesElement : $('tx-vjchat-style'),
+		userListElement : $('tx-vjchat-userlist'),
+		debugElement : $('tx-vjchat-debug'),
+		popup : ###ISPOPUP###,
+		popupJSWindowParams : "###POPUP_JS_WINDOW_PARAMS###",
+		userlistPMContent :	'###USERLIST_PM_CONTENT###',
+		userlistPRContent : '###USERLIST_PR_CONTENT###',
+		userlistPMInfo : '###USERLIST_PM_INFO###',
+		userlistPRInfo : '###USERLIST_PR_INFO###',
+		talkToNewRoomName : "###TALK_TO_ROOM_NAME###",
+		allowPrivateMessages : ###ALLOW_PRIVATE_MESSAGES###,
+		allowPrivateRooms : ###ALLOW_PRIVATE_ROOMS###,
+		globalInstanceName : "chat_instance",
+		useSnippets : ###USE_SNIPPETS###,
+		snippetsError : '###SNIPPETS_ERROR###',
+		tooltipOffsetX : ###TOOLTIP_OFFSET_X###,
+		tooltipOffsetY : ###TOOLTIP_OFFSET_Y###,
+		focusOnNewMessage : false,
+		chatbuttonson : ###CHATBUTTONS_ON###,
+		chatbuttonsoff : ###CHATBUTTONS_OFF###,
+		chatbuttonskeys : ###CHATBUTTONS_KEYS###,
+		enableSound : ###ENABLE_SOUND###,
+		soundSupportOptions : ###SOUND_SUPPORT_OPTIONS###,
+		soundSupportName : "###SOUND_SUPPORT###",
+		soundMessage : ###SOUND_MESSAGE###,
+		soundUserlist : ###SOUND_USERLIST###,
+		chatWindow : self,
+		JSdebug : true		
+	}
+
+	function openChatWindow(id) {
+		chat_instance.openChatWindow(id);
+	}
+
+	function setValueToInput(value) {
+		chat_instance.setValueToInput(value);
+	}
+
+	
+	//Effect.Appear('tx-vjchat-loadinginfo', { duration: 2.0, to: 0.8 });
+		
+	Event.observe(window, 'load', tx_vjchat_launch);
+	function tx_vjchat_launch() {
+	
+		//$('tx-vjchat-loadinginfo').hide();
+		$('tx-vjchat-container').show();
+		
+		if(typeof Scriptaculous == 'object') {
+			
+			Effect.Appear('tx-vjchat-messages', { duration: 1.0, afterFinish: tx_vjchat_step1 });
+			Effect.Appear('tx-vjchat-userlist', { duration: 1.0 });
+
+		}
+		else {
+			$('tx-vjchat-messages').show();
+			$('tx-vjchat-userlist').show();
+			$('tx-vjchat-tools-container').show();
+			$('tx-vjchat-input-container').show();		
+			$('tx-vjchat-loadinginfo').hide();
+			$('txvjchatnewMessage').focus();
+			chat_instance.init();
+			chat_instance.run();
+		}
+		
+	};
+	
+	function tx_vjchat_step1(obj) {
+		if($('tx-vjchat-tools-container'))
+			Effect.Appear('tx-vjchat-tools-container', { duration: 1.0, afterFinish: tx_vjchat_step2 });
+		else
+			tx_vjchat_step2(null);
+	}
+	
+	function tx_vjchat_step2(obj) {
+		Effect.Appear('tx-vjchat-input-container', { duration: 1.0, afterFinish: tx_vjchat_step3 });
+	}	
+	
+	function tx_vjchat_step3(obj) {
+
+		chat_instance.init();
+		chat_instance.run();
+
+		$('txvjchatnewMessage').focus();
+		Effect.Fade('tx-vjchat-loadinginfo');
+		
+	}		
+		
+		// this is just a bit hacking because soundManager config needs to be done before window.onLoad fires.
+	###SOUND_SUPPORT_EXTRA###
+	
+//]]>
+</script>
+
+<!--###CHATROOM### end-->
+
+<!--###CHATROOM_FULL### begin-->
+<script language="JavaScript" type="text/javascript">
+//<![CDATA[
+	var chat_instance = new tx_vjchat_pi1_js_chat();
+
+	chat_instance.configuration = {
+		roomId : ###CHATROOM_ID###,
+		scriptUrl : "###SCRIPTURL###",
+		checkFullTime: ###RELOAD_TIME###,
+		globalInstanceName : "chat_instance",
+		checkFullStatusElement : $('tx-vjchat-full-jsstatus')		
+	}
+
+	chat_instance.init();
+	chat_instance.checkFull();
+//]]>
+</script>
+<!--###CHATROOM_FULL### end-->

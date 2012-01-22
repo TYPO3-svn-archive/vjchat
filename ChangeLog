@@ -1,0 +1,186 @@
+11-05-08 0.3.4 Vincent Tietz
+* [fix] problem with loading chat in IE8
+* [fix] loading language files
+* [add] emptyTitleHandling = useAlt for tooltips in FF and Chrome
+* [contributor] Joerg Wagner - Digilog multimedia
+
+0.3.3 Vincent Tietz
+* [fix] security issues
+
+08-05-23 0.3.2 Vincent Tietz
+* [add] Image for each chat room (available with field:image)
+* [add] sound support 
+* [add] feature to display all users that are currently chatting
+* [add] userfunction (overallusercountofroomfrompage) that can be inlcuded into a TMENUITEM
+* [add] group id in chat messages
+* [add] encoding in ajax-messages
+* [sponsor] Herbstzeit Seniorenportal GmbH, http://www.herbstzeit.de/
+
+07-11-19 0.3.1 Vincent Tietz
+* [fix] character decoding
+* [fix] Scriptaculous is really optional now
+
+07-11-13 0.3.0 Vincent Tietz
+* [add] two-state chat buttons (on/off)
+* [add] some scriptaculous effects
+* [add] Loading message
+* [add] autofocus (but seems not to work in FF)
+* [add] JS Cookie support for some features
+* [add] defaultChatpopupPid, pidList
+* [add] optional send button
+* [add] multi customizable room list views
+* [add] page reference for chat room
+* [add] html snippets for userlist and userlist tooltip
+* [add] tooltipOffsetXY
+* [add] simple tooltip behaviour (to keep it in borders)
+* [add] extended flexform for rooms view and chatroom
+* [add] CDATA for all javascript blocks
+* [change] made /who /whois a little bit prettier
+* [change] smily 8) is now 8-) because of destroying js-functions like "showChatWindow(8)" when replacing
+* [change] added full urls to all javascript room links
+* [add] put javascript link actions also to onClick
+* [fix] chat should work with realurl now (checking urls for '?')
+* [fix] utf-8 problems
+* [fix] auto-delete of private rooms
+* [sponsor] Herbstzeit Seniorenportal GmbH, http://www.herbstzeit.de/
+
+07-04-27 0.2.7 Vincent Tietz
+* [fix] system messages were not shown; help button did not work; thx to Karl Nabinger for bug report
+* [added] auto inclusion of contrib/prototype/prototype.js only when ext prototypejs is NOT loaded
+* [added] error message when user was not found when using /msg
+
+07-04-26 0.2.6 Vincent Tietz
+* [added] the prototype framework is now included automatically since it comes with TYPO3 (typo3/contrib)
+* [added] in extension manager one can configure the path to the framework
+* [fix] filtering double messages (clients keep list of received ids)
+
+07-01-29 0.2.5 Vincent Tietz
+* [change] make use of eID for ajax calls; removed patched tslib_fe and t3lib_div
+* [change] in template for userlist: <h1 id="tx-vjchat-user-detail-caption">username<h1> to <div id="tx-vjchat-user-detail-caption"></div>
+* [change] first step towards using "real" xml like response (<returnmsg>), but main content still as CDATA
+* [fix] new line in textarea in firefox
+* [fix] cleanUpRoom didn't delete anything if no session has been defined
+* [fix] auto checking when full did not work properly
+
+06-11-14 0.2.4 Vincent Tietz
+* [change] useShippedT3Lib_Div is now disabled by default
+* [added] some more functions to shipped t3lib_div
+* [fix] prototype dependency: 0.0.1
+
+06-11-11 0.2.3 Vincent Tietz  
+* [added] option to use shipped tslib_fe and t3lib_div
+* [change] show user info ordered by form entry
+* [change] order of parameter of /makesession
+* [change] actions of format buttons are now within the <img> tag with onClick
+* [change] actions of links in the help command are now defined by <span 
+class="tx-vjchat-cmd-help-link" onclick="..."
+* [correction] documentation
+* [fix] PATH_thisScript on windows mashines
+
+06-11-11 0.2.2 Vincent Tietz  
+* [change] beta version
+* [change] documentation updated
+* [fix] commit message js error
+* [fix] if popup page is empty in flexform the same page will be displayed
+* [fix] hide kicked users
+
+06-10-31 0.2.1 Vincent Tietz  
+* [add] dependency entries (prototypejs)
+
+06-10-30 0.2.0 Vincent Tietz  
+* [add] nicknames are now randomly colorized
+* [add] users can select message styles (configurable via TypoScript and CSS)
+* [change] appearance
+* [change] CSS default styles
+* [change] /help will contain links now
+* [add] private rooms: /newroom
+* [add] private messages: /msg
+* [add] auto delete messages option
+* [add] superuser group
+* [change] made chat a bit more object oriented
+* [change] uses now the prototype JavaScript framework from Sam Stephenson 
+(http://prototype.conio.net/).
+
+06-05-12 Vincent Tietz  
+* added commands: /smileys and /roomlist (thanks to Udo Gerhards)
+* added commands: /makeexpert, /makeuser, /cleanuproom, /cleanupall, /setstatus
+* major changes in the template (added emoticons and format panels) and new default css styles; removed form tag
+* formating added [b], [u], [i]
+* added sorting fields to sesssions and rooms
+* entries are sorted by time in BE by default
+* userlist updates only if changed, tooltip user information
+
+06-06-19 0.1.5 Vincent Tietz  
+* [add] dutch transalation (thx to ben van 't ende)
+* [change] improved character encoding and string glues (thx to Kevin Renskers for 
+bug report)
+
+06-05-19 0.1.4 Vincent Tietz  
+* changed field 'status' to 'invisible'
+* added alias in SQL command (thx to Franz Dürr)
+* added <langDisable>1</langDisable>; fixed some locallang references and update 
+danish translation (thx to Peter Klein)
+
+06-05-15 Vincent Tietz  
+* added Danisch translation (thx to Peter Klein)
+* fixed SUBSTR MySQL syntax error for MySQL lower than 4.1.1.
+
+06-05-12 Vincent Tietz  
+* added commands: /smileys and /roomlist (thanks to Udo Gerhards)
+* added commands: /makeexpert, /makeuser, /cleanuproom, /cleanupall, /setstatus
+* major changes in the template (added emoticons and format panels) and new default 
+css styles; removed form tag
+* formating added [b], [u], [i]
+* added sorting fields to sesssions and rooms
+* entries are sorted by time in BE by default
+* userlist updates only if changed, tooltip user information
+
+06-04-28 Vincent Tietz  
+* fix: storing messages in IE
+
+06-04-07 Vincent Tietz  
+* nearly all labels now refer to locallang.php
+
+06-04-06 Vincent Tietz  
+* added prefix 'tx-vjchat-' to all styles and ids
+* Hidden messages can be stored in an extra view during the chat
+* Room extended with fields, that define the details that should be shown in the userlist and in /who /whois
+* new userlist (no selectlist anymore) with popup details about the user
+* better /who and /whois
+* Session is now defined by first and last entry(id) (instead of timestamp)
+* in backend users can now be selected with the TYPO3-ElementBrowser
+
+
+06-04-03 Vincent Tietz  
+* Messages will now be received depending on id instead of timestamp. This is much better, but need to be tested :)
+
+06-03-31 Vincent Tietz  
+* Tried to fix the problem with more than one <form> on a page
+* send only new requests if previous request returned successfull
+
+06-03-29 Vincent Tietz  
+* Increasing performance by using a small version of tslib_fe.
+* After sending one message immediately retrieve new messages
+
+06-03-28 Vincent Tietz  
+* IMPORTANT: fixed bug if entered values in flexform
+* involving serverTimeOffset in all timestamps evaluated from flexform (initChatWithMessagesBefore)
+
+06-03-14 Vincent Tietz  
+* minor changes in class.tx_vjchat_pi1.php (cObj->data = $this->getRoomData)
+
+
+06-03-09 Vincent Tietz  
+* introducing charset in HTTP-Header
+* IMPORTANT: this->chatScript was hard coded - sorry for that
+* fixed foreach errors in /help
+
+06-01-19 Vincent Tietz  
+* /makesession available
+* fixed: System message on entering chat
+* formatting messages with strip_tags instead of htmlentities (for apos reason)
+* pids can now be declared in the extension manager for new entries and sessions
+
+
+06-01-19 Vincent Tietz  
+* Initial release
