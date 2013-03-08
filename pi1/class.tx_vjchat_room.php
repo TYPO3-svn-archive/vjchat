@@ -13,7 +13,6 @@ class tx_vjchat_room {
 	var $welcomemessage;
 	var $closed;
 	var $mode;
-	var $showfullnames;	
 	var $maxusercount;
 	var $owner;
 	var $moderators;
@@ -30,6 +29,10 @@ class tx_vjchat_room {
 	var $members;
 	var $page;
 	var $image;
+	var $chatUserNameFieldSuperusers;
+	var $chatUserNameFieldExperts;
+	var $chatUserNameFieldModerators;
+	var $chatUserNameFieldUsers;
 
 	function tx_vjchat_room() {
 	
@@ -45,7 +48,6 @@ class tx_vjchat_room {
 		$this->name = $array['name'];
 		$this->description = $array['description'];
 		$this->closed = $array['closed'];	
-		$this->showfullnames = $array['showfullnames'];			
 		$this->mode = $array['mode'];					
 		$this->maxusercount = $array['maxusercount'];
 		$this->moderators = $array['moderators'];	
@@ -63,6 +65,11 @@ class tx_vjchat_room {
 		$this->members = $array['members'];											
 		$this->page = $array['page'];
 		$this->image = $array['image'];		
+		$this->chatUserNameFieldSuperusers = $array['chatUserNameFieldSuperusers'];
+		$this->chatUserNameFieldExperts = $array['chatUserNameFieldExperts'];
+		$this->chatUserNameFieldModerators = $array['chatUserNameFieldModerators'];
+		$this->chatUserNameFieldUsers = $array['chatUserNameFieldUsers'];
+		
 	}
 
 	function toArray() {
@@ -75,7 +82,6 @@ class tx_vjchat_room {
 			'name' => $this->name,
 			'description' => $this->description,
 			'closed' => $this->closed,
-			'showfullnames' => $this->showfullnames,			
 			'mode' => $this->mode,			
 			'maxusercount' => $this->maxusercount,			
 			'owner' => $this->owner,
@@ -93,6 +99,10 @@ class tx_vjchat_room {
 			'members' => $this->members,												
 			'page' => $this->page,
 			'image' => $this->image,
+			'chatUserNameFieldSuperusers' => $this->chatUserNameFieldSuperusers,
+			'chatUserNameFieldExperts' => $this->chatUserNameFieldExperts,
+			'chatUserNameFieldModerators' => $this->chatUserNameFieldModerators,
+			'chatUserNameFieldUsers' => $this->chatUserNameFieldUsers
 		);
 
 		return $theValue;
@@ -110,10 +120,6 @@ class tx_vjchat_room {
 		return ($this->private == 1);
 	}
 	
-	function showFullNames() {
-		return $this->showfullnames;
-	}
-
 	function showDetailOf($type, $what) {
 		switch($type) {
 			case 'user': 

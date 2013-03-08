@@ -534,18 +534,41 @@ plugin.tx_vjchat_pi1 {
 		30.field = username
 		30.wrap = <span id="tx-vjchat-user-detail-caption">|</span><br />
 
+		35 = COA
+		35 {
+			# This is just an example, add as much as you need
+			# Don't forget to add the fieldnames in the room's form in the backend!
+			10 = TEXT 
+			10.field = name
+			10.wrap = <p>|</p>
+			10.if.isTrue.field = name
+		}
+		
+		
 		40 = COA
 		40 {
-			# This is just an example, add as much you need
-			# But don't forget to add the fieldnames in the room's form in the backend!
+			# This is just an example, add as much as you need
+			# Don't forget to add the fieldnames in the room's form in the backend!
 			10 = TEXT 
 			10.field = company
-			10.wrap = <br />
+			10.wrap = <p></p>
 			10.if.isTrue.field = company
 		}
 		
 		40.stdWrap.wrap = <span id="tx-vjchat-user-detail-body">|</span>
 
+	}
+	
+	###############################################################################################################
+	# Debug Template
+	###############################################################################################################
+	debugTemplate = COA
+	debugTemplate {
+		10 = TEXT
+		10.value = <pre id="tx-vjchat-debug-timers"></pre>
+		20 = TEXT
+		20.value = <pre id="tx-vjchat-debug-messages"></pre>
+		stdWrap.wrap = <div id="tx-vjchat-debug">|</div>
 	}
 
 	###############################################################################################################
@@ -965,13 +988,32 @@ plugin.tx_vjchat_pi1 {
 		
 		#tx-vjchat-debug {
 			width: 99%;
-			height: 200px; 
+			height: 400px; 
 			border: 1px solid silver; 
 			font-family: Courier New, Courier; 
 			font-size: 8pt; 
-			overflow:auto; 
+			display: block;
 		}
-	
+
+		#tx-vjchat-debug-messages {
+			width: 99%;
+			height: 400px; 
+			border: 1px solid silver; 
+			font-family: Courier New, Courier; 
+			font-size: 8pt; 
+			overflow: auto;
+			display: block;
+		}
+
+		#tx-vjchat-debug-timers {
+			width: 99%;
+			height: 200px; 
+			border: 1px solid silver; 
+			font-family: Courier New, Courier; 
+			font-size: 8pt;
+			overflow: scroll;	
+			display: block;
+		}
 
 	
 	/* MESSAGE ITEMS */
@@ -1056,60 +1098,6 @@ plugin.tx_vjchat_pi1 {
 			text-decoration: underline;
 		}
 	
-	/* SELECTABLE USER STYLES */
-		
-		/* if you do not want to colorize usernames like style use
-			.tx-vjchat-message-style-0  .tx-vjchat-entry {
-				color: #000000;
-			}
-		*/
-		.tx-vjchat-message-style-0   {
-			color: #000000;
-		}
-		.tx-vjchat-message-style-1 {
-			color: #000055;
-		}
-		.tx-vjchat-message-style-2 {
-			color: #008000;
-		}
-		.tx-vjchat-message-style-3 {
-			color: #FF0000;
-		}
-		.tx-vjchat-message-style-4 {
-			color: #800000;
-		}
-		.tx-vjchat-message-style-5 {
-			color: #800080;
-		}
-		.tx-vjchat-message-style-6 {
-			color: #FF5500;
-		}
-		.tx-vjchat-message-style-7 {
-			color: #FFFF00;
-		}
-		.tx-vjchat-message-style-8 {
-			color: #00FF00;
-		}
-		.tx-vjchat-message-style-9  {
-			color: #008080;
-		}
-		.tx-vjchat-message-style-10 {
-			color: #00FFFF;
-		}
-		.tx-vjchat-message-style-11 {
-			color: #0000FF;
-		}
-		.tx-vjchat-message-style-12 {
-			color: #FF00FF;
-		}
-		.tx-vjchat-message-style-13 {
-			color: #7F7F7F;
-		}
-		.tx-vjchat-message-style-14 {
-			color: #D2D2D2;
-		}
-
-
 	/* HELP AND COMMAND OUTPUT */
 	
 
@@ -1273,6 +1261,60 @@ plugin.tx_vjchat_pi1 {
 			padding: 0 !important;
 			border: 0;
 		}
+		
+	/* SELECTABLE USER STYLES */
+		
+		/* if you do not want to colorize usernames like style use
+			.tx-vjchat-message-style-0  .tx-vjchat-entry {
+				color: #000000;
+			}
+		*/
+		.tx-vjchat-message-style-0 .tx-vjchat-entry   {
+			color: #000000 !important;
+		}
+		.tx-vjchat-message-style-1 .tx-vjchat-entry {
+			color: #000055 !important;
+		}
+		.tx-vjchat-message-style-2 .tx-vjchat-entry {
+			color: #008000 !important;
+		}
+		.tx-vjchat-message-style-3 .tx-vjchat-entry {
+			color: #FF0000 !important;
+		}
+		.tx-vjchat-message-style-4 .tx-vjchat-entry {
+			color: #800000 !important;
+		}
+		.tx-vjchat-message-style-5 .tx-vjchat-entry {
+			color: #800080 !important;
+		}
+		.tx-vjchat-message-style-6 .tx-vjchat-entry {
+			color: #FF5500 !important;
+		}
+		.tx-vjchat-message-style-7 .tx-vjchat-entry {
+			color: #FFFF00 !important;
+		}
+		.tx-vjchat-message-style-8 .tx-vjchat-entry {
+			color: #00FF00 !important;
+		}
+		.tx-vjchat-message-style-9 .tx-vjchat-entry  {
+			color: #008080 !important;
+		}
+		.tx-vjchat-message-style-10 .tx-vjchat-entry {
+			color: #00FFFF !important;
+		}
+		.tx-vjchat-message-style-11 .tx-vjchat-entry {
+			color: #0000FF !important;
+		}
+		.tx-vjchat-message-style-12 .tx-vjchat-entry {
+			color: #FF00FF !important;
+		}
+		.tx-vjchat-message-style-13 .tx-vjchat-entry {
+			color: #7F7F7F !important;
+		}
+		.tx-vjchat-message-style-14 .tx-vjchat-entry {
+			color: #D2D2D2 !important;
+		}
+		
 	)
 
 }

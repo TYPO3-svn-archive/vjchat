@@ -17,14 +17,14 @@ class tx_vjchat_itemsProcFunc {
 	}	
 	
 	function user_vjchat_getFeUserColumns(&$items) {
-		$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('*','fe_users', '', 'username LIMIT 0,1');		
-		$row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res);
-		var_dump($items);
+		$res = $GLOBALS['TYPO3_DB']->sql_query("SHOW COLUMNS FROM fe_users");		
 		$items['items'] = array();
-		foreach($row as $key => $value) {
-			$items['items'][] = array($key, $key);
+		while($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res)) {
+			if((!strstr($row['Type'],'text') && !strstr($row['Type'],'varchar')) || ($row['Field'] == 'password'))
+				continue;
+			$items['items'][] = array($row['Field'], $row['Field']);
+			//$items['items'][] = $key;
 		}
-		
 		return $items;
 	}
 }

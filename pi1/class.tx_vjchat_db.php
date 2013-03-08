@@ -328,21 +328,17 @@ class tx_vjchat_db {
 	}
 
 	function updateUserInRoom($roomId, $userId, $isSuperuser = false, $enterlabel = '') {
-
+			
 		if(!$userId || !$roomId)
 			return;
-			
-		$roomId = intval($roomId);
-		$userId = intval($userId);
-
+		
 		$user = $this->getFeUser($userId);
-			
+		$room = $this->getRoom($roomId);			
+
 		//check if User is already memberOf Room
 		// if not try to add
 		if(!$this->isMemberOfRoom($roomId, $userId, false)) {
-			// check first if room is full
-			$room = $this->getRoom($roomId);
-
+			
 			// allow superusers to access room even if it is 'full'
 			if($this->isRoomFull($room) && !$isSuperuser)
 				return 'full';
@@ -358,13 +354,13 @@ class tx_vjchat_db {
 			);
 
 			$res = $this->db->exec_INSERTquery('tx_vjchat_room_feusers_mm', $data);			
-
+			
 			if(!$res)
 				print '#'.__LINE__.' - '.($this->db->debug_lastBuiltQuery);
 
 			// system message for all users, except if user is invisible
 			if(!$invisible)
-				$this->putMessage($roomId, sprintf($enterlabel,$user['username']));			
+				$this->putMessage($roomId, sprintf($enterlabel,tx_vjchat_lib::getChatUserName($room, $user)));			
 			
 			return "entered";
 		}
@@ -373,7 +369,7 @@ class tx_vjchat_db {
 		else {
 		
 			if($this->getUserStatus($roomId, $userId, 'in_room') == 0)
-				$this->putMessage($roomId, sprintf($enterlabel,$user['username']));
+				$this->putMessage($roomId, sprintf($enterlabel,tx_vjchat_lib::getChatUserName($room, $user)));
 			
 			$data = array('tstamp' => $this->getTime(),'in_room' => 1);
 			$res = $this->db->exec_UPDATEquery('tx_vjchat_room_feusers_mm', 'uid_local = '.$roomId.' AND uid_foreign = '.$userId.' AND tstamp < '.$this->getTime(), $data);
@@ -395,8 +391,6 @@ class tx_vjchat_db {
 		$idle = intval($idle);
 		$removeSystemMessagsOlderThan = intval($removeSystemMessagsOlderThan);
 
-//		$data = array('tx_vjchat_inchatroom' => '');
-		
 		$res = $this->db->exec_SELECT_mm_query('fe_users.*','tx_vjchat_room','tx_vjchat_room_feusers_mm','fe_users', ' AND (tx_vjchat_room.uid = '.$roomId.') AND ( (tx_vjchat_room_feusers_mm.tstamp) < '.($this->getTime()-$idle).')');
 
 		if(!$res)
@@ -503,16 +497,17 @@ class tx_vjchat_db {
 			return false;
 		
 		$user = $this->getFeUser($userId);
-	
-		if($systemMessageOnLeaving && !$this->getUserStatus($roomId, $userId, 'invisible') && $this->getUserStatus($roomId, $userId, 'in_room'))
-			$this->putMessage($roomId, sprintf($leaveMessage, $user['username']));
+		
+		if($systemMessageOnLeaving && !$this->getUserStatus($roomId, $userId, 'invisible') && $this->getUserStatus($roomId, $userId, 'in_room')) {
+			$room = $this->getRoom($roomId);
+			$this->putMessage($roomId, sprintf($leaveMessage, tx_vjchat_lib::getChatUserName($room, $user)));
+		}
 
 		$data = array('in_room' => 0);		
 		$res = $this->db->exec_UPDATEquery('tx_vjchat_room_feusers_mm', 'uid_local = '.$roomId.' AND uid_foreign = '.$userId, $data);
 			
-			// definitely delete unnecessary  entries
+			// definitely delete unnecessary entries
 		$idle = 60 * 10;
-		//$res = $this->db->exec_DELETEquery('tx_vjchat_room_feusers_mm', ' uid_local = '.$roomId.' AND uid_foreign = '.$userId.' AND (tstamp < '.($this->getTime()-$idle).')');		
 		$res = $this->db->exec_DELETEquery('tx_vjchat_room_feusers_mm', 'tstamp < '.($this->getTime()-$idle));		
 		
 		if(!$res)
@@ -521,61 +516,57 @@ class tx_vjchat_db {
 	}	
 	
 
-	function getFeUsersOfRoom($room, $getHidden = false) {
+	function getFeUsersOfRoom($room, $getHidden = false, $getKickedAndBanned = false) {
 
 		if(!$room)
 			return NULL;
 			
 		$users = array();
-/*
-		// do not get kicked users (tstamp > $this->getTime())
-
-		// get experts
-		$res = $this->db->exec_SELECT_mm_query('fe_users.*,tx_vjchat_room_feusers_mm.invisible as invisible','tx_vjchat_room','tx_vjchat_room_feusers_mm','fe_users', ' AND tx_vjchat_room.uid = '.$room->uid.' AND tx_vjchat_room_feusers_mm.tstamp <= '.$this->getTime().' AND FIND_IN_SET(fe_users.uid, tx_vjchat_room.experts)', '', 'username');
-
-		if(!$res)
-			print '#'.__LINE__.' - '.($this->db->debug_lastBuiltQuery);
-
-		while($row = $this->db->sql_fetch_assoc($res)) {
-			if($row['invisible'] && !$getHidden)
-				continue;
-			$users[$row['uid']] = $row;
-		}
-
-		// get moderators
-		$res = $this->db->exec_SELECT_mm_query('fe_users.*,tx_vjchat_room_feusers_mm.invisible as invisible','tx_vjchat_room','tx_vjchat_room_feusers_mm','fe_users', ' AND tx_vjchat_room.uid = '.$room->uid.' AND tx_vjchat_room_feusers_mm.tstamp <= '.$this->getTime().' AND FIND_IN_SET(fe_users.uid, tx_vjchat_room.moderators)', '', 'username');
-
-		if(!$res)
-			print '#'.__LINE__.' - '.($this->db->debug_lastBuiltQuery);
-
-		while($row = $this->db->sql_fetch_assoc($res)) {
-			if($row['invisible'] && !$getHidden)
-				continue;
-			$users[$row['uid']] = $row;
-		}
-
-		// get users
-		$res = $this->db->exec_SELECT_mm_query('fe_users.*,tx_vjchat_room_feusers_mm.invisible as invisible','tx_vjchat_room','tx_vjchat_room_feusers_mm','fe_users', ' AND tx_vjchat_room.uid = '.$room->uid.' AND tx_vjchat_room_feusers_mm.tstamp <= '.$this->getTime().' AND NOT FIND_IN_SET(fe_users.uid, tx_vjchat_room.moderators) AND NOT FIND_IN_SET(fe_users.uid, tx_vjchat_room.experts)', '', 'username');
-
-		if(!$res)
-			print '#'.__LINE__.' - '.($this->db->debug_lastBuiltQuery);
-
-		while($row = $this->db->sql_fetch_assoc($res)) {
-			if($row['invisible'] && !$getHidden)
-				continue;
-			$users[$row['uid']] = $row;
-		}
-	*/
 	
-		$users = $this->getOnlineUsers($room->uid);
-		$experts = $this->getOnlineExperts($room->uid);
-		$moderators = $this->getOnlineModerators($room->uid);				
+		if($getHidden && $getKickedAndBanned) {
+			$res = $this->db->exec_SELECT_mm_query('fe_users.*,tx_vjchat_room_feusers_mm.invisible as invisible','tx_vjchat_room','tx_vjchat_room_feusers_mm','fe_users', ' AND in_room = 1');
+
+			if(!$res)
+				print '#'.__LINE__.' - '.($this->db->debug_lastBuiltQuery);
+			$users = array();
+			while($row = $this->db->sql_fetch_assoc($res)) {
+				if($row['invisible'] && !$getHidden)
+					continue;		
+				$users[$row['uid']] = $row;
+			}
+			
+			foreach(explode(',',$room->bannedusers) as $userId) {
+				$feuser = $this->getFeUser($userId);
+				$users[$feuser['uid']] = $feuser;
+			}
+			
+			return $users;
+		}
+		
+		$users = $this->getOnlineUsers($room->uid, $getHidden);
+		$experts = $this->getOnlineExperts($room->uid, $getHidden);
+		$moderators = $this->getOnlineModerators($room->uid, $getHidden);				
 		
 		return array_merge($users, $experts, $moderators);
 		
 	}
 	
 
+	function getAllOnlineUsers($getHidden = false) {
+
+		$res = $this->db->exec_SELECT_mm_query('fe_users.*,tx_vjchat_room_feusers_mm.invisible as invisible','tx_vjchat_room','tx_vjchat_room_feusers_mm','fe_users', ' AND tx_vjchat_room_feusers_mm.tstamp <= '.$this->getTime().' AND in_room = 1');
+
+		if(!$res)
+			print '#'.__LINE__.' - '.($this->db->debug_lastBuiltQuery);
+		$users = array();
+		while($row = $this->db->sql_fetch_assoc($res)) {
+			if($row['invisible'] && !$getHidden)
+				continue;		
+			$users[$row['uid']] = $row;
+		}
+		return $users;
+	}
+	
 	function getOnlineSuperusers($roomId, $getHidden = false) {
 		if(!$roomId)
 			return NULL;
@@ -629,7 +620,6 @@ class tx_vjchat_db {
 		if(!$res)
 			print '#'.__LINE__.' - '.($this->db->debug_lastBuiltQuery);
 
-		//$res = $this->db->exec_SELECTquery('*','fe_users', ' (FIND_IN_SET(\''.$roomId.'\', tx_vjchat_inchatroom)) > 0', '', 'username');
 		$users = array();
 		while($row = $this->db->sql_fetch_assoc($res)) {
 			if($row['invisible'] && !$getHidden)
@@ -639,6 +629,7 @@ class tx_vjchat_db {
 		return $users;
 	}
 	
+	/* Returns online users only (without superuser and moderators) */
 	function getOnlineUsers($roomId, $getHidden = false) {
 		
 		if(!$roomId)
@@ -648,16 +639,11 @@ class tx_vjchat_db {
 
 		// do not get kicked users (tstamp > $this->getTime())
 
-		// get experts
-//		$res = $this->db->exec_SELECT_mm_query('fe_users.*,tx_vjchat_room_feusers_mm.invisible as invisible','tx_vjchat_room','tx_vjchat_room_feusers_mm','fe_users', ' AND tx_vjchat_room.uid = '.$room->uid.' AND tx_vjchat_room_feusers_mm.tstamp <= '.$this->getTime().' AND FIND_IN_SET(fe_users.uid, tx_vjchat_room.experts)', '', 'username');
-
-
 		$res = $this->db->exec_SELECT_mm_query('fe_users.*,tx_vjchat_room_feusers_mm.invisible as invisible','tx_vjchat_room','tx_vjchat_room_feusers_mm','fe_users', ' AND tx_vjchat_room.uid = '.$roomId.' AND NOT FIND_IN_SET(fe_users.uid,tx_vjchat_room.moderators) AND NOT FIND_IN_SET(fe_users.uid,tx_vjchat_room.experts) AND tx_vjchat_room_feusers_mm.tstamp <= '.$this->getTime().' AND in_room = 1');
 
 		if(!$res)
 			print '#'.__LINE__.' - '.($this->db->debug_lastBuiltQuery);
 
-		//$res = $this->db->exec_SELECTquery('*','fe_users', ' (FIND_IN_SET(\''.$roomId.'\', tx_vjchat_inchatroom)) > 0', '', 'username');
 		$users = array();
 		while($row = $this->db->sql_fetch_assoc($res)) {
 			if($row['invisible'] && !$getHidden)
@@ -775,7 +761,6 @@ class tx_vjchat_db {
 
 		$entries = array();
 		while($row = $this->db->sql_fetch_assoc($res)) {
-			//var_dump($row);
 			$entry = t3lib_div::makeInstance('tx_vjchat_entry');
 			$entry->fromArray($row);
 			$entries[] = $entry;
@@ -796,7 +781,6 @@ class tx_vjchat_db {
 
 		$entries = array();
 		while($row = $this->db->sql_fetch_assoc($res)) {
-			//var_dump($row);
 			$entry = t3lib_div::makeInstance('tx_vjchat_entry');
 			$entry->fromArray($row);
 			$entries[] = $entry;
@@ -1138,8 +1122,8 @@ class tx_vjchat_db {
 		
 	}
 		
-	function setMessageStyle($user, $style) {
-		$res = $this->db->exec_UPDATEquery('fe_users', 'uid = '.(intval($user['uid'])), array('tx_vjchat_chatstyle' => $style));
+	function setMessageStyle($userId, $style) {
+		$res = $this->db->exec_UPDATEquery('fe_users', 'uid = '.($userId), array('tx_vjchat_chatstyle' => $style));
 		if(!$res)
 			print '#'.__LINE__.' - '.($this->db->debug_lastBuiltQuery);		
 		return $this->db->sql_affected_rows();

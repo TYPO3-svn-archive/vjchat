@@ -1,4 +1,3 @@
-
 <?php
 /***************************************************************
 *  Copyright notice
@@ -47,6 +46,7 @@ class tx_vjchat_chat {
 	var $env;
 	var $debug = false;
 	var $debugMessages = array();
+	var $timer = null;
 	
 	var $room;
 	var $user;
@@ -55,35 +55,31 @@ class tx_vjchat_chat {
 	
 	var $extConf;
 
-	function init($user, $charset) {
+	function init($user, $charset, $timer) {
 		// load language files
 		// at this moment it is impossible to modify this via TypoScript
 		//$LLKey = $GLOBALS['TSFE']->config['config']['language'];
 		$this->microtime = microtime();	
+		$this->timer = $timer;
 
 		$this->extConf = tx_vjchat_lib::getExtConf();
 		
 		// get parameters
-		//$this->env['user'] = $GLOBALS['TSFE']->fe_user->user;
 		$this->env['user'] = $user->user;
 		$this->env['room_id'] = intval(t3lib_div::_GP('r'));
 		$this->env['pid'] = intval(t3lib_div::_GP('p'));
-		//$this->env['charset'] = intval(t3lib_div::_GP('charset'));
-		$this->env['charset'] = $charset;
-		//var_dump(t3lib_div::_GP('m'));
+		$this->env['charset'] = $charset;		
 		
-		$this->env['msg'] = t3lib_div::_GP('m');
-		
-		//var_dump($this->env['charset']);
-		
-		//if($this->env['charset'] == 'utf-8')
-			$this->env['msg'] = tx_vjchat_lib::utf8RawUrlDecode($this->env['msg'], $this->env['charset'] == 'utf-8');
-
+		// decode message
+		$this->env['msg'] = base64_decode(t3lib_div::_GP('m'));
+		//$this->env['msg'] = tx_vjchat_lib::utf8RawUrlDecode($this->env['msg'], $this->env['charset'] == 'utf-8');
+		$this->env['msg'] = utf8_decode($this->env['msg']);
 		$this->env['msg'] = str_replace('<', '&lt;', $this->env['msg']);		
 		$this->env['msg'] = str_replace('>', '&gt;', $this->env['msg']);
 
 		$this->env['action'] = htmlspecialchars(t3lib_div::_GP('a'));
 		$this->env['lastid'] = intval(t3lib_div::_GP('t'));
+		$this->env['ulhash'] = tx_vjchat_lib::utf8RawUrlDecode(t3lib_div::_GP('ulhash'), $this->env['charset'] == 'utf-8');		
 		$this->env['uid'] = intval(t3lib_div::_GP('uid'));
 		$this->env['usercolor'] = intval(t3lib_div::_GP('uc'));
 		$this->env['LLKey'] = htmlspecialchars(t3lib_div::_GP('l'));		
@@ -98,6 +94,7 @@ class tx_vjchat_chat {
 		
 		$this->room = $this->db->getRoom($this->env['room_id']);
 		$this->user = $this->env['user'];
+		$this->feUsersOfRoom = null;
 		
 		if(t3lib_div::_GP('d') == 'true') 
 			$this->debug = true;
@@ -154,46 +151,82 @@ class tx_vjchat_chat {
 		return $result;
 	}
 
-	function debugMessage($function) {
-		$this->debugMessages[] = $function.':'.$this->getMicrotime();
+	function debugMessage($message) {
+		if($this->debug)
+			$this->debugMessages[] = $message;
 	}
 
 	/**
 	  * Prepares an array of messages for client. This means prepending each message with [MSG] and adding a timestamp after [TIME]
-	  * @param mixed
+	  * @param messages
+	  * @param container name for result messsages
 	  * @return string
 	  */
-	function returnMessage($messages, $withId = true) {
-		
-		$this->debugMessage('returnMessage');
+	function returnMessage($messages, $messagescontainer = 'messages') {
+
+		if(!$this->debug && $messages == null)
+			return;
 	
-		if(!is_array($messages))
-			$messages = array($messages);
-
-		if(t3lib_div::_GP('d') == 'alltime')  {
-			$messages[] = "ALL: ".($this->getMicrotimeAsFloat() - $this->getMicrotimeAsFloat($GLOBALS['TYPO3_MISC']['microtime_start']));
-		}
-
-		if($this->debug) {
-			foreach($this->debugMessages as $message)
-				$messages[] = $message;
+		if($messages != null) {
+			if(!is_array($messages))
+				$messages = array($messages);
 		}
 		
-		$out = '';
-		foreach($messages as $message) {
-			$out .= '<msg><![CDATA[
-				'.$message.'
-				]]></msg>';
-		}
+			// client expects utf8 encoded messages
+		foreach($messages as $key => $message)
+			$messages[$key] = utf8_encode($messages[$key]);
 		
-		//return tx_vjchat_lib::getMessagesGlue().implode(tx_vjchat_lib::getMessagesGlue(),$messages).tx_vjchat_lib::getIdGlue().$this->lastMessageId;
-		$id = $withId ? ' id="'.$this->lastMessageId.'"' : '';
-		return '<?xml version="1.0" encoding="'.($this->env['charset']).'"?>'.chr(10).'<returnmsg'.$id.'>'.$out.'</returnmsg>';
+		$return = array('id' => $this->lastMessageId, $messagescontainer => $messages, 'debug' => $this->debugMessages, 'timers' => $this->timer->output());
+		
+		$json = tx_vjchat_lib::json_encode($return, 'chatresponse');
+		$base64 = base64_encode($json);
+		return $base64;
+		
+	}
+	
+	function returnUserlist($users, $messagescontainer = 'useritems') {
+	
+		$ulhash = '';
+	
+		if($users != null) {
+		
+			if(!is_array($users))
+				$users = array($users);
+		
+			$hashBase = array();
+			foreach($users as $user) {
+				$hashBase[] = $user['uid'];
+			}
+				// ulhash prevents sending userlist to client if there aren't any updates
+			$ulhash = t3lib_div::shortMD5(implode($hashBase));
+			if(strcmp($ulhash,$this->env['ulhash']) == 0) {
+				$users = null;
+			}
+		}
+
+		
+
+		if(!$this->debug && ($users == null || strcmp($ulhash,$this->env['ulhash']) == 0))
+			return;		
+		
+			// client expects utf8 encoded messages
+		//foreach($users as $key => $user)
+			//$users[$key]['username'] = utf8_encode($users[$key]['username']);
+			
+		$callback =  array($this, 'utf8_encode_array');
+		$this->array_walk_recursive($users, $callback);
+		
+		$return = array('ulhash' => $ulhash, $messagescontainer => $users, 'debug' => $this->debugMessages, 'timers' => $this->timer->output());
+		
+		$json = tx_vjchat_lib::json_encode($return, 'chatresponse');
+		$base64 = base64_encode($json);
+		return $base64;
+		
 	}
 	
 	function putMessage($msg, $lastid, $tofeuserid = 0) {
 
-		$this->debugMessage('putMessage');
+		$this->debugMessage(__LINE__.'putMessage: '.$msg);
 	
 		if($msg == '')
 			return;
@@ -244,7 +277,6 @@ class tx_vjchat_chat {
 	
 		$this->db->setDebug(true);
 
-
 		if(!tx_vjchat_lib::isSuperuser($this->room, $this->user)) {
 		
 			// check if user is banned
@@ -276,23 +308,22 @@ class tx_vjchat_chat {
 		if($resUpdate === "full") 
 			return $this->returnMessage('full');
 			
-		$this->debugMessage('getMessage:AccessChecksDone');	
-		
-		
 		$entries = $this->db->getEntries($this->room, $lastid);
-		$this->debugMessage('getMessage:getEntries');		
 		
 		if(count($entries) == 0)
-			return;
+			return $this->returnMessage(null);
 		
-		$messages = '';
+		$messages = array();
 		foreach($entries as $entry) {
+	
+			$this->debugMessage('entry: '.($entry->entry));
 	
 			// if message is a quit message for current client 
 			if((preg_match('/^\/quit/i', $entry->entry)) && ($this->user['uid'] == $entry->feuser)) {
+				$this->debugMessage('/quit called');
 				$this->db->leaveRoom($this->room->uid, $entry->feuser);
 				$this->db->deleteEntry($entry->uid);
-				return '/quit';		// will be handled by client javascript
+				return $this->returnMessage('/quit');		// will be handled by client javascript
 			}
 
 			// delete from db if entry is a command and continue with next entry
@@ -318,6 +349,8 @@ class tx_vjchat_chat {
 			}
 			else {
 			
+				$this->debugMessage('PM from '.$entry->feuser.' to '.($entry->tofeuserid));
+			
 				$involved = ($entry->tofeuserid == $this->user['uid']) || ($entry->feuser == $this->user['uid']);
 			
 				// if this is a private message check if this message should be received by the current user
@@ -327,7 +360,10 @@ class tx_vjchat_chat {
 					
 				// if not a superuser check show message to sender an recipient only
 				if(!tx_vjchat_lib::isSuperuser($this->room, $this->user) && !$involved)
-						continue;	// skip to next entry
+					continue;	// skip to next entry
+					
+				$this->debugMessage('PM user involved');
+				
 			}
 	
 			// get User of entry
@@ -338,25 +374,22 @@ class tx_vjchat_chat {
 				$username = $this->lang->getLL('system_name');
 			else {
 				$entryUser = $this->db->getFeUser($entry->feuser);	// this holds the complete user array
-				$username = $this->room->showFullNames() ? $entryUser['name'] : $entryUser['username'];
+				$username = tx_vjchat_lib::getChatUserName($this->room, $entryUser);
 			}
 			
-			$username = htmlentities($username);
+			$this->debugMessage(__LINE__);
 			
 			// the superuser should know the recipient of a private message
 			//if(tx_vjchat_lib::isSuperuser($this->room, $this->user) && $entry->isPrivate()) {
 			if($entry->isPrivate()) {
 				$recipient = $this->db->getFeUser($entry->tofeuserid);
-				$username = sprintf($this->lang->getLL('privateMsgUsernamens'), $username, $recipient['username']);
+				$username = sprintf($this->lang->getLL('privateMsgUsernamens'), $username, tx_vjchat_lib::getChatUserName($this->room, $recipient));
 			}
 			
-			// get formatted text
-			$this->debugMessage('formatMessageB');
-
+			$this->debugMessage(__LINE__);
+			
 			$entryText = tx_vjchat_lib::formatMessage($entry->entry, $this->extConf['emoticonsPath']);
 
-			$this->debugMessage('formatMessageE');			
-	
 			$id = "";
 			if(tx_vjchat_lib::isModerator($this->room, $this->user['uid']))
 				$id = '#'.$entry->uid.'&nbsp;';
@@ -367,6 +400,7 @@ class tx_vjchat_chat {
 			// prepare message that should be sent to client
 			$message = '<span class="tx-vjchat-time">'.strftime("%H:%M:%S", $time).':&nbsp;'.$id.'</span><span class="tx-vjchat-user tx-vjchat-userid-'.$entry->feuser.'">'.$username.'</span>&gt;&nbsp;<span class="tx-vjchat-entry">'.$entryText.'</span>';
 	
+			$this->debugMessage(__LINE__);	
 	
 			// if entry is hidden and user is a moderator then add a commit link
 			if($entry->hidden) {
@@ -379,6 +413,7 @@ class tx_vjchat_chat {
 				}
 			}
 
+			$this->debugMessage(__LINE__);
 
 			if($entryUser)
 				$message = '<div class="tx-vjchat-'.tx_vjchat_lib::getUserTypeString($this->room, $entryUser).'">'.$message.'</div>';
@@ -393,18 +428,21 @@ class tx_vjchat_chat {
 			$message = '<div id="'.$mid.'" class="tx-vjchat-message-style-'.($entry->style).$groupstyles.'">'.$message.'</div>';
 			
 			$messages[] = $message;
+			
+			$this->debugMessage(__LINE__);
 	
 		}
 
 		// if just entered chat
 		if($resUpdate === "entered") {
 			// welcome message
-//			$messages[] = htmlentities($this->room->welcomemessage);
 			$messages[] = $this->room->welcomemessage;
 			$messages[] = $this->lang->getLL('after_welcome_message');
 		}
+		
+		$this->debugMessage(__LINE__);
+		$this->debugMessage(implode('\n',$messages));
 	
-//		var_dump(htmlentities($this->returnMessage($messages)));
 		return $this->returnMessage($messages);
 	
 	}
@@ -428,8 +466,8 @@ class tx_vjchat_chat {
 			return $this->returnMessage($this->lang->getLL('error_room_access_denied'));
 	
 		//$messages = $this->getUserNamesOfRoom($room);
-		$messages = $this->getUserlistOfRoom($room, $roomlistMode);
-		return $this->returnMessage($messages);
+		$users = $this->getUserlistOfRoom($room, $roomlistMode);
+		return $this->returnUserlist($users, 'useritems');
 	}	
 	
 	function commitMessage($entryId) {
@@ -792,7 +830,7 @@ class tx_vjchat_chat {
 					if (count($roomUsers) >0) {
 						$htmlOut .='<ul class=tx-vjchat-cmd-roomlist-userlist">';
 						foreach($roomUsers as $user)
-									$htmlOut .= '<li class="tx-vjchat-cmd-roomlist-user">'.$user.'</li>';
+									$htmlOut .= '<li class="tx-vjchat-cmd-roomlist-user">'.$this->getUsername($user).'</li>';
 						$htmlOut .= '</ul>';
 					}
 					$htmlOut .= '</div>';
@@ -814,40 +852,50 @@ class tx_vjchat_chat {
 		return $htmlOut;
 	}
 
+
 	function _whois($params) {
+	
 		// get informations about self
 		if(!$params[1]) {
 			return implode(', ',$this->getUserInfo($this->room, $this->env['user'], ': '));
 		} 
 		// get userid if username is givem
 		else {
-			//return '-'.$params[1].'-';
-			$user = $this->getFeUserByInput($params[1]);
-			if(!$user)
+			$users = $this->getFeUserByInput($params[1]);
+			if(!$users || count($users) == 0)
 				return sprintf($this->lang->getLL('command_error_user_not_found'), $params[1]);
+			if(count($users) > 1)
+				return sprintf($this->lang->getLL('command_error_user_not_unique'), $params[1]);
+			$user = $users[0];
 			return implode(', ',$this->getUserInfo($this->room, $user, ': '));
 		}
 	}
 
 	function _msg($params) {
-		$user = $this->getFeUserByInput($params[1]);
-
-		if(!$user)
+		$users = $this->getFeUserByInput($params[1]);
+		if(!$users || count($users) == 0)
 			return sprintf($this->lang->getLL('command_error_user_not_found'), $params[1]);
+		if(count($users) > 1)
+			return sprintf($this->lang->getLL('command_error_user_not_unique'), $params[1]);
+		$user = $users[0];
 
 		unset($params[1]);
 		$message = implode(' ',$params);
+		$this->debugMessage('/msg: '.$message);
 		$this->putMessage($message, $this->lastMessageId, $user['uid']);
 
 	}
 
 	function _ban($params) {
-		$user = $this->getFeUserByInput($params[1]);
-		if(!$user)
+		$users = $this->getFeUserByInput($params[1]);
+		if(!$users || count($users) == 0)
 			return sprintf($this->lang->getLL('command_error_user_not_found'), $params[1]);
-
+		if(count($users) > 1)
+			return sprintf($this->lang->getLL('command_error_user_not_unique'), $params[1]);
+		$user = $users[0];
+			
 		// send a system notification message
-		$systemmessage = sprintf($this->lang->getLL('command_ban_ok'), $user['username'], $this->user['username']);
+		$systemmessage = sprintf($this->lang->getLL('command_ban_ok'), ($this->getUsername($user)), $this->getUsername($this->user));
 		unset($params[1]);
 		unset($params[2]);
 		$systemmessage .= $params[3] ? (' '.sprintf($this->lang->getLL('command_ban_reason'), implode(' ',$params))) : '';
@@ -866,23 +914,23 @@ class tx_vjchat_chat {
 	}
 
 	function _kick($params) {
-		$user = $this->getFeUserByInput($params[1]);
-		if(!$user)
+		$users = $this->getFeUserByInput($params[1]);
+		if(!$users || count($users) == 0)
 			return sprintf($this->lang->getLL('command_error_user_not_found'), $params[1]);
+		if(count($users) > 1)
+			return sprintf($this->lang->getLL('command_error_user_not_unique'), $params[1]);
+		$user = $users[0];
 
 		$time = $params[2] ? $params[2] : $this->commands['kick']['parameters']['time']['default'];
 
 		// send a system notification message
-		$systemmessage = sprintf($this->lang->getLL('command_kick_ok'), $user['username'], $this->user['username'], $time);
+		$systemmessage = sprintf($this->lang->getLL('command_kick_ok'), tx_vjchat_lib::getChatUserName($this->room, $user), $this->getUsername($this->user), $time);
 		unset($params[1]);
 		unset($params[2]);
 		$systemmessage .= $params[3] ? (' '.sprintf($this->lang->getLL('command_kick_reason'), implode(' ',$params))) : '';
 		$this->db->putMessage($this->env['room_id'], $systemmessage);
 
 		sleep(5);
-
-		// and quit
-	//	$this->db->putMessage($this->room->uid, '/quit', $user['uid'], true, 0, $user['uid']);
 
 		// and kick
 		$this->db->kickUser($this->room->uid, $user['uid'], $time);
@@ -891,14 +939,17 @@ class tx_vjchat_chat {
 	}
 	
 	function _redeem($params) {
-		$user = $this->getFeUserByInput($params[1]);
-		if(!$user)
+		$users = $this->getFeUserByInput($params[1]);
+		if(!$users || count($users) == 0)
 			return sprintf($this->lang->getLL('command_error_user_not_found'), $params[1]);
-
+		if(count($users) > 1)
+			return sprintf($this->lang->getLL('command_error_user_not_unique'), $params[1]);
+		$user = $users[0];
+		
 		$this->db->redeemUser($this->env['room_id'], $user['uid']);
 
 		// send a system notification message
-		$systemmessage = sprintf($this->lang->getLL('command_redeem_ok'), $user['username'], $this->user['username']);
+		$systemmessage = sprintf($this->lang->getLL('command_redeem_ok'), ($this->getUsername($user)), $this->getUsername($this->user));
 		unset($params[1]);
 		$systemmessage .= $params[2] ? (' '.sprintf($this->lang->getLL('command_redeem_reason'), implode(' ',$params))) : '';
 		$this->db->putMessage($this->env['room_id'], $systemmessage);
@@ -909,17 +960,14 @@ class tx_vjchat_chat {
 	function _quit($params) {
 
 		// send a system notification message
-		$systemmessage = sprintf($this->lang->getLL('command_quit_ok'), $this->user['username']);
+		$systemmessage = sprintf($this->lang->getLL('command_quit_ok'), $this->getUsername($this->user));
 		$systemmessage .= $params[1] ? (' '.sprintf($this->lang->getLL('command_quit_reason'), implode(' ',$params))) : '';
 		$this->db->putMessage($this->env['room_id'], $systemmessage);
 		sleep(2);
 
 		// and quit
-		//$this->db->putMessage($this->env['room_id'], '/quit', 0, $this->user, true, $this->user['uid']);
-		//$this->putMessage('/quit', $this->lastMessageId, $user['uid']);
-		$this->db->putMessage($this->env['room_id'], '/quit', $this->user['uid'], true);
+		$this->db->putMessage($this->env['room_id'], '/quit', '', $this->user['uid'], true);
 		return 'OK';
-	//	return '/quit';
 	}
 	
 	function _makesession($params) {
@@ -935,13 +983,16 @@ class tx_vjchat_chat {
 	}
 
 	function _makeexpert($params) {
-		$user = $this->getFeUserByInput($params[1]);
-		if(!$user)
+		$users = $this->getFeUserByInput($params[1]);
+		if(!$users || count($users) == 0)
 			return sprintf($this->lang->getLL('command_error_user_not_found'), $params[1]);
-
+		if(count($users) > 1)
+			return sprintf($this->lang->getLL('command_error_user_not_unique'), $params[1]);
+		$user = $users[0];
+		
 		$res = $this->db->makeExpert($this->room, $user['uid']);
 		if($res) {
-			$message = 'User '.$user['username'].' is now an expert. Initiated by '.$this->user['username'].'.';
+			$message = 'User '.($this->getUsername($user)).' is now an expert. Initiated by '.($this->getUsername($this->user)).'.';
 			$this->db->putMessage($this->env['room_id'], $message);
 			return 'OK';
 		} 
@@ -952,13 +1003,16 @@ class tx_vjchat_chat {
 	}
 	
 	function _makeuser($params) {
-		$user = $this->getFeUserByInput($params[1]);
-		if(!$user)
+		$users = $this->getFeUserByInput($params[1]);
+		if(!$users || count($users) == 0)
 			return sprintf($this->lang->getLL('command_error_user_not_found'), $params[1]);
-
+		if(count($users) > 1)
+			return sprintf($this->lang->getLL('command_error_user_not_unique'), $params[1]);
+		$user = $users[0];
+		
 		$res = $this->db->makeUser($this->room, $user['uid']);
 		if($res) {
-			$message = 'User '.$user['username'].' is set to a normal user. Initiated by '.$this->user['username'].'.';
+			$message = 'User '.($this->getUsername($user)).' is set to a normal user. Initiated by '.($this->getUsername($this->user)).'.';
 			$this->db->putMessage($this->env['room_id'], $message);
 			return 'OK';
 		} 
@@ -980,9 +1034,12 @@ class tx_vjchat_chat {
 	function _togglestatus($params) {
 
 		if($params[2]) {
-			$user = $this->getFeUserByInput($params[1]);
-			if(!$user)
+			$users = $this->getFeUserByInput($params[1]);
+			if(!$users || count($users) == 0)
 				return sprintf($this->lang->getLL('command_error_user_not_found'), $params[1]);
+			if(count($users) > 1)
+				return sprintf($this->lang->getLL('command_error_user_not_unique'), $params[1]);
+			$user = $users[0];
 		
 			$res = $this->db->setUserStatus($this->room, $user, $params[2]);
 		}
@@ -998,7 +1055,18 @@ class tx_vjchat_chat {
 	}	
 	
 	function _setmessagestyle($params) {
-		return $this->db->setMessageStyle($this->user, $params[1]) ? 'Style '.$params[1].'.' : '<span class="tx-vjchat-error">ERROR</<span>';
+		
+		$newstyle = $params[1];
+		$this->debugMessage('setmessagestyle: '.implode(',',$params));
+		
+		if($newstyle == $this->user['tx_vjchat_chatstyle'] || $newstyle == 0) {
+			$newstyle = 0;
+			$this->db->setMessageStyle($this->user['uid'], $newstyle);
+			return $this->lang->getLL('default_chatstyle');
+		}
+
+		$this->db->setMessageStyle($this->user['uid'], $newstyle);
+		return $this->lang->getLL('chatstyle').': '.$newstyle.'.';
 	}
 	
 	function _newroom($params) {
@@ -1006,38 +1074,40 @@ class tx_vjchat_chat {
 		$username = $this->getUsername();
 
 		if(!$params[1]) {
-			$name = sprintf($this->lang->getLL('command_newroom_room_default_title'), $username);
+			$roomName = sprintf($this->lang->getLL('command_newroom_room_default_title'), $username);
 		}
 		else 
-			$name = implode(' ',$params);
+			$roomName = implode(' ',$params);
 		
 		$newRoom = new tx_vjchat_room();
 		$newRoom->pid = $this->room->pid;		
-		$newRoom->name = $this->db->getUniqueRoomName($name);
+		$newRoom->name = $this->db->getUniqueRoomName(tx_vjchat_lib::decodeUsername($roomName));
 		$newRoom->superusergroup = $this->room->superusergroup;
 		$newRoom->description = sprintf($this->lang->getLL('command_newroom_room_default_description'), $username);
 		$newRoom->owner = $this->user['uid'];
 		$newRoom->moderators = $this->user['uid'];
 		$newRoom->private = true;		
-		$newRoom->showfullnames = $this->room->showfullnames;
 		$newRoom->showuserinfo_users = $this->room->showuserinfo_users;
 		$newRoom->showuserinfo_moderators = $this->room->showuserinfo_moderators;
 		$newRoom->showuserinfo_experts = $this->room->showuserinfo_experts;				
 		$newRoom->hidden = $this->extConf['hidePrivateRooms'];
-		
-		$roomId = $this->db->createNewRoom($newRoom);
-		$this->db->updateUserInRoom($roomId, $this->user['uid']);
+		$newRoom->chatUserNameFieldSuperusers = $this->room->chatUserNameFieldSuperusers;
+		$newRoom->chatUserNameFieldExperts = $this->room->chatUserNameFieldExperts;
+		$newRoom->chatUserNameFieldModerators = $this->room->chatUserNameFieldModerators;
+		$newRoom->chatUserNameFieldUsers = $this->room->chatUserNameFieldUsers;
+	
+		$newRoom->uid = $this->db->createNewRoom($newRoom);
+		$this->db->updateUserInRoom($newRoom->uid, $this->user['uid']);
 		
 		$msg = sprintf($this->lang->getLL('command_newroom_ok'), $newRoom->name);
-		$msg .= ' <a href="javascript:openChatWindow('.$roomId.');" onClick="javascript:openChatWindow('.$roomId.'); return false;">'.$this->lang->getLL('command_invite_enter_room').'</a>' ;
-		$msg .= '<script language="JavaScript" type="text/javascript">openChatWindow('.$roomId.')</script>';
+		$msg .= ' <a href="javascript:openChatWindow('.($newRoom->uid).');" onClick="javascript:openChatWindow('.($newRoom->uid).'); return false;">'.$this->lang->getLL('command_invite_enter_room').'</a>' ;
+		$msg .= '<script language="JavaScript" type="text/javascript">openChatWindow('.($newRoom->uid).')</script>';
 		
-//		$this->db->putMessage($this->room->uid, $msg, 0, $this->user, true, 0, $this->user['uid']);
-			
 		return $msg;
 	}
 
 	function _do_invite($user, $room) {
+	
 		$this->db->addMemberToRoom($room, $user['uid']);
 
 		if($params[2]) {
@@ -1049,7 +1119,7 @@ class tx_vjchat_chat {
 		}
 		
 		$msg = $msg.' <a href="javascript:openChatWindow('.$room->uid.');">'.$this->lang->getLL('command_invite_enter_room').'</a>' ;
-
+		
 		$rooms = $this->db->getRoomsOfUser($user['uid']);
 
 		if(count($rooms) == 0) {
@@ -1066,8 +1136,14 @@ class tx_vjchat_chat {
 	}
 	
 	function _invite($params) {
-
-		$user = $this->getFeUserByInput($params[1]);
+	
+		$users = $this->getFeUserByInput($params[1]);
+		
+		if(!$users || count($users) == 0)
+			return sprintf($this->lang->getLL('command_error_user_not_found'), $params[1]);
+		if(count($users) > 1)
+			return sprintf($this->lang->getLL('command_error_user_not_unique'), $params[1]);
+		$user = $users[0];
 		
 		if(!$user)
 			return sprintf($this->lang->getLL('command_error_user_not_found'), $params[1]);
@@ -1077,7 +1153,12 @@ class tx_vjchat_chat {
 	
 	function _recentinvite($params) {
 
-		$user = $this->getFeUserByInput($params[1]);
+		$users = $this->getFeUserByInput($params[1]);
+		if(!$users || count($users) == 0)
+			return sprintf($this->lang->getLL('command_error_user_not_found'), $params[1]);
+		if(count($users) > 1)
+			return sprintf($this->lang->getLL('command_error_user_not_unique'), $params[1]);
+		$user = $users[0];
 		
 		if(!$user)
 			return sprintf($this->lang->getLL('command_error_user_not_found'), $params[1]);
@@ -1125,6 +1206,8 @@ class tx_vjchat_chat {
 	
 	function performCommand($lines) {
 
+		$this->timer->start('performCommand');
+	
 		if(!tx_vjchat_lib::checkAccessToRoom($this->room, $this->env['user']))
 			return $this->lang->getLL('error_room_access_denied');
 
@@ -1132,27 +1215,35 @@ class tx_vjchat_chat {
 		
 		foreach($lines as $line) {
 
+			$this->debugMessage(__LINE__.$line);
 
 			// replace ' ' in quoted Strings by '_'
-			/*if (preg_match('/ \'(.*)\'/i', $line, $matches)) {
+			if (preg_match('/ \'(.*)\'/i', $line, $matches)) {
 				$line = str_replace('*', '', $line);
 				$line = str_replace($matches[1], urlencode($matches[1]), $line);
-			}*/
+			}
 
+			//$this->debugMessage(__LINE__.print_r($this->getAllOnlineUsers()));
+			
+			// encode usernames, e.g., to avoid splitting user names wit space
+			$line = tx_vjchat_lib::findAndEncodeChatUserNames($this->room, $line, $this->getFeUsers());
+			
+			$this->debugMessage(__LINE__.$line);
+			
 			// check if message contains commands
 			$parts = t3lib_div::trimExplode(' ', $line);
 
 			$found = false;
 			
 			foreach($this->commands as $command => $data) {
-				//var_dump($parts[0]);
+				// parse command
 				if($parts[0] == ('/'.$command)) {
 					$found = true;
 					// check rights
 					unset($parts[0]);
 					
 					if(!$this->grantAccessToCommand($command, $this->env['user'])) {
-						$out .= $this->returnMessage('<span class="tx-vjchat-error">'.$this->lang->getLL('error_access_denied').'</span>');
+						$out .= '<span class="tx-vjchat-error">'.$this->lang->getLL('error_access_denied').'</span>';
 						continue;
 					}
 										
@@ -1160,7 +1251,15 @@ class tx_vjchat_chat {
 					// check params
 					$paramResult = $this->checkParams($parts, $data['parameters']);
 					if($paramResult === true) {
+	
+						// perform command
 						$cmdResult = $this->$data['callback']($parts);
+
+						// decode user names for command result
+						foreach($parts as $key => $part) {
+							$parts[$key] = tx_vjchat_lib::findAndDecodeChatUserNames($this->room, $parts[$key], $this->getFeUsers());
+						}
+						
 						if(!$data['hidefeedback'])
 							$out .= '<span class="tx-vjchat-ok">/'.$command.' '.implode(' ',$parts).': '.$cmdResult.'</span>';
 						else
@@ -1179,7 +1278,9 @@ class tx_vjchat_chat {
 
 		}
 		
-		return $this->returnMessage($out, false);
+		$this->timer->stop('performCommand');
+		
+		return $this->returnMessage($out);
 		
 	
 	}
@@ -1193,49 +1294,45 @@ class tx_vjchat_chat {
 	  */
 	function getUserlistOfRoom($room, $roomlistMode = false) {
 		
-		$userNamesGlue = tx_vjchat_lib::getUserNamesGlue();
-		$userNamesFieldGlue = tx_vjchat_lib::getUserNamesFieldGlue();
-		
 		$users = $this->db->getFeUsersOfRoom($room);
+		$theValue = array();
 		
-		$userNames = array();
 		foreach($users as $user) {
-		
-			if(!$user || !$user['username'])
+
+			if(!$user || !$user['uid'])
 				continue;
+				
+			$auser = array();
 			
 			$type = tx_vjchat_lib::getUserTypeString($room, $user);
-			$parts['username'] = htmlentities($this->getUsername($user));
 			
-			$snippets = $this->db->getSnippets($room->uid, $user['uid']);
-						
-			if(!$roomlistMode) {
-				$parts['type'] = $type;
-				$parts['uid'] = $user['uid'];
-				$parts['style'] = $user['tx_vjchat_chatstyle'];
-			}
+			$auser['uid'] = $user['uid'];
+			$auser['username'] = tx_vjchat_lib::getChatUserName($room, $user);
+			$auser['style'] = $user['tx_vjchat_chatstyle'];
+			$auser['type'] = tx_vjchat_lib::getUserTypeString($room, $user);
 
+			$snippets = $this->db->getSnippets($room->uid, $user['uid']);
+			
 			if($snippets['userlistsnippet'])
-				$parts['userlistsnippet'] = $snippets['userlistsnippet'];
+				$auser['userlistsnippet'] = $snippets['userlistsnippet'];
 			
-			if($roomlistMode && $snippets['userlistsnippet']) {
-				unset($parts['username']);
-			}
-					
-			
-			if(!$roomlistMode)
-				$parts['tooltipsnippet'] = $snippets['tooltipsnippet'];
-			
+			if($snippets['tooltipsnippet'])	
+				$auser['tooltipsnippet'] = $snippets['tooltipsnippet'];
+
 			$details = $room->getDetailsField($type);
+			$auser['additonalinformation'] = array();
 			foreach($details as $key) {
-				if($room->showDetailOf($type,$key))
-					$parts[] = $key.($userNamesFieldGlue.$user[$key]);
+				if($room->showDetailOf($type,$key)) {
+					$auser['additonalinformation'][$key] = $user[$key];
+				}
 			}			
 			
-			$userNames[] = implode($userNamesGlue, $parts);
+			$theValue[] = $auser;
 			
 		}
-		return $userNames;		
+		
+		return $theValue;
+		
 	}
 	
 	/**
@@ -1244,11 +1341,12 @@ class tx_vjchat_chat {
 	function getUserinfoOfRoom($room, $userNamesGlue = ': ', $userNamesFieldGlue = ', ') {
 
 		$users = $this->db->getFeUsersOfRoom($room);
+		//$users = $room->members;
 		
 		$userNames = array();
 		foreach($users as $user) {
 		
-			if(!$user || !$user['username'])
+			if(!$user || !($this->getUsername($user)))
 				continue;
 			
 			$parts = $this->getUserInfo($room, $user, $userNamesFieldGlue, $onlyAllowedFields);
@@ -1274,29 +1372,44 @@ class tx_vjchat_chat {
 		return $parts;	
 	}
 
+	function getFeUsers() {
+		if(!$this->feUsersOfRoom)
+			$this->feUsersOfRoom = $this->db->getFeUsersOfRoom($this->room, true, true);
+		return $this->feUsersOfRoom;
+	}
+
 	function getFeUserByInput($input) {
-		if(preg_match("/#([0-9]*)/", $input, $matches)) {
-			return $this->db->getFeUser($matches[1]);			
-		}
-
-		$input = str_replace('*','',$input);
-		return $this->db->getFeUserByName($input);
-
+		$chatUsername = tx_vjchat_lib::decodeUsername($input);
+		return tx_vjchat_lib::getUserByChatUserName($this->room, $chatUsername, $this->getFeUsers());
 	}
 	
-	/*
-	function getUserInfoString($room, $user) {
-		return tx_vjchat_lib::trimImplode(', ', $this->getUserInfo($room, $user, null, true));
-	}
-	*/
-
 	function getUsername($user = NULL) {
 		if(!$user)
-			return ($this->room->showFullNames() ? ($this->user['name'] ? $this->user['name'] : $this->user['username']) : $this->user['username']);
+			return tx_vjchat_lib::getChatUserName($this->room, $this->user);
 		else
-			return ($this->room->showFullNames() ? ($user['name'] ? $user['name'] : $user['username']) : $user['username']);
+			return tx_vjchat_lib::getChatUserName($this->room, $user);
 	}
 
+	function utf8_encode_array(&$item, $key) {
+		return utf8_encode($item);
+	}
+	
+	function array_walk_recursive(&$input, &$callback, $userdata = null) {
+		foreach($input as $key => $value) {
+			if (is_array($value)) {
+				if(!$this->array_walk_recursive(&$input[$key], $callback, $userdata)) {
+					return false;
+				}
+			}
+			else {
+				$input[$key] = call_user_func(&$callback, &$value, $key, $userdata);
+			}
+		}
+		return true;
+	}
+
+ 
+	
 }
 
 if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/vjchat/pi1/class.tx_vjchat_chat.php'])	{

@@ -16,13 +16,10 @@ function tx_vjchat_pi1_js_chat() {
 	this.leaveUrl 				= "";
 	this.newWindowUrl 			= "";
 	this.initialId 				= 0;
+	this.ulhash					= '';
 	this.charset 				= "iso-8859-1";
-	this.debugMode				= "";	
+	this.debugMode				= "1";	
 	this.lang 					= "de";		
-	this.usernameGlue 			= "<user>";
-	this.usernamesFieldGlue 	= ": ";
-	this.messagesGlue 			= "<msg>";
-	this.idGlue 				= "<id>";
 	this.userColors				= Array('#CCCCCC','#000000','#3636B2','#2A8C2A','#C33B3B','#C73232','#80267F','#66361F','#D9A641','#3DCC3D','#1A5555','#2F8C74','#4545E6','#B037B0','#4C4C4C','#959595');
 	this.colorizeNicks 			= true;
 	this.showTime 				= true;
@@ -36,7 +33,9 @@ function tx_vjchat_pi1_js_chat() {
 	this.emoticonsElement		= $('tx-vjchat-emoticons');	
 	this.stylesElement			= $('tx-vjchat-style');	
 	this.storedMessagesElement  = $('tx-vjchat-storedMessages');
-	this.debugElement 			= $('tx-vjchat-debug');
+	this.debugElementMessages 	= $('tx-vjchat-debug-messages');
+	this.debugElementUserlist 	= $('tx-vjchat-debug-userlist');
+	this.debugElementTimers 	= $('tx-vjchat-debug-timers');
 	tx_vjchat_pi1_js_chat_instance 	= "chat_instance";
 	this.maxActiveRequests		= 3;
 	this.JSdebug				= false;
@@ -64,6 +63,7 @@ function tx_vjchat_pi1_js_chat() {
 	this.soundSupportOptions    = new Object();
 	this.soundMessage			= null;
 	this.soundUserlist			= null;
+	this.currentChatStyle		= 0;
 
 	var globalInstanceName = tx_vjchat_pi1_js_chat_instance;
 
@@ -89,25 +89,7 @@ function tx_vjchat_pi1_js_chat() {
 
 		globalInstanceName = tx_vjchat_pi1_js_chat_instance;
 
-/*
-		if(this.emoticonsElement) {
-			if(this.showEmoticons) {
-				Element.show(this.emoticonsElement);
-			}
-			else {
-				Element.hide(this.emoticonsElement);		
-			}
-		}
-		
-		*/
-		
-				
-//		this.toggleElementByCookie(this.emoticonsElement);
-//		this.toggleElementByCookie(this.stylesElement);
-
-
 		for(var i = 0;i<this.chatbuttonskeys.length;i++) {
-			//alert('on: '+this.chatbuttonskeys[i]+' : '+name+ ' : '+this.chatbuttonson[i]);
 			var name = this.chatbuttonskeys[i];
 			var containerName = name+'-container';
 			this.chatbuttonsoff[i] = $(containerName) ? $(containerName).innerHTML : '';
@@ -167,7 +149,7 @@ function tx_vjchat_pi1_js_chat() {
 	  */
 	this.run = function() {
 		
-		this.debug("Run chat: room:"+this.roomId+" initialId:"+this.initialId);
+		console.debug("Run chat: room:"+this.roomId+" initialId:"+this.initialId);
 		
 		// set current id to initial id
 		this.id = this.initialId;
@@ -185,12 +167,33 @@ function tx_vjchat_pi1_js_chat() {
 	}
 
 	this.debug = function(message) {
-		if(this.JSdebug && this.debugMode) {
-			this.debugElement.innerHTML += message.escapeHTML() + "<br>";
-			this.debugElement.scrollTop = this.debugElement.scrollHeight;
+		if(this.JSdebug) {
+			this.debugElementMessages.innerHTML += message.escapeHTML() + "<br>";
+			this.debugElementMessages.scrollTop = this.debugElementMessages.scrollHeight;
 		}
 	}
 
+	this.debugUserlist = function(message) {
+		if(this.JSdebug) {
+			this.debugElementUserlist.innerHTML += message.escapeHTML() + "<br>";
+			this.debugElementUserlist.scrollTop = this.debugElementUserlist.scrollHeight;
+		}
+	}
+
+	/*
+	this.debugTimers = function(message, node) {
+		if(this.JSdebug && message) {
+
+			var newTimerNode = document.createElement("div");
+			var attr = document.createAttribute("style");
+			attr.nodeValue = "float:left;";
+			newTimerNode.setAttributeNode(attr);
+			
+			newTimerNode.innerHTML = message.escapeHTML();
+			this.debugElementTimers.appendChild(newTimerNode);
+		}
+	}	
+	*/
 	
 	var handleAjaxError = function(t) {
 		alert('Error ' + t.status + ' -- ' + t.statusText);
@@ -261,42 +264,36 @@ function tx_vjchat_pi1_js_chat() {
 					on404:handleAjax404
 				}
 			);
-		this.debug("Request: "+this.scriptUrl+'?r='+this.roomId+'&a=gm&t='+this.id+'&charset='+this.charset+'&d='+this.debugMode+'&l='+this.lang);
+		//console.debug("Request: "+this.scriptUrl+'?r='+this.roomId+'&a=gm&t='+this.id+'&charset='+this.charset+'&d='+this.debugMode+'&l='+this.lang);
 
 		if(!noSetTimeout)
 			window.setTimeout("tx_vjchat_pi1_js_chat_instance.getMessages()", this.refreshMessagesTime);
 	}
 
-	var getMessagesResponseHandler = function(t) {
-		// return to the scope of the chat object
-		//eval(globalInstanceName + ".parseMessages(t.responseText)");		
+	var getMessagesResponseHandler = function(t) {	
 		self.parseMessages(t.responseText);
 	}
 	
-	this.extractDebug = function(string) {
-		
-		var debug = true;
-		while(debug) {
-		
-			var result = string.match(/(<debug>(.*)?<\/debug>)/i);
-		
-			if(result && (result[1].length > 0)) {
-				this.debugElement.innerHTML = this.debugElement.innerHTML + result[1];
-				Element.show(this.debugElement);
-				// scroll down
-				this.debugElement.scrollTop = this.debugElement.scrollHeight;
+	this.extractDebug = function(responseObject) {
+		if(responseObject.debug)
+			for (i = 0; i<responseObject.debug.length; i++) {
+				console.debug(responseObject.debug[i]);
 			}
-			else
-				debug = false;
-
-			//alert("huhu");				
-			//alert(result[0]);
-			if(result && (result[0].length > 0))
-				string = string.replace(result[0], "");
+		if(responseObject.timers) {
 			
+			var newTimerNode = document.createElement("div");
+			var attr = document.createAttribute("style");
+			attr.nodeValue = "float:left;";
+			newTimerNode.setAttributeNode(attr);				
+			
+			for (i = 0; i<responseObject.timers.length; i++) {
+				var timer = responseObject.timers[i];
+				var message = timer.label+':'+timer.time;
+				newTimerNode.innerHTML += message.escapeHTML()+'<br />';
+			}
+			if(this.debugElementTimers)
+				this.debugElementTimers.appendChild(newTimerNode);
 		}
-		
-		return string;
 	}
 	
 	this.htmlspecialchars = function(str,typ) {
@@ -312,73 +309,36 @@ function tx_vjchat_pi1_js_chat() {
 	}
 
 	this.parseString = function(string) {
-	
-		
-	
-		// remove any debug informations
-		string = this.extractDebug(string);
-
-
-		string = tools.trimString(string);
-
-		if(string == "")
+		if(!string || string.length == 0)
 			return null;
-
-		// code for IE
-		if (window.ActiveXObject) {
-		  var doc=new ActiveXObject("Microsoft.XMLDOM");
-		  doc.async="false";
-		  doc.loadXML(string);
-		}
-		// code for Mozilla, Firefox, Opera, etc.
-		else {
-			var parser=new DOMParser();
-			var doc=parser.parseFromString(string,"text/xml");
-		}
-		
-		return doc.documentElement;
-			
+		console.debug('parseString: '+string);
+			var responseDecoded = Base64.decode(string);
+		console.debug('decodedString: '+responseDecoded);
+		var responseObject = json_parse(responseDecoded);
+		this.extractDebug(responseObject.chatresponse);
+		return responseObject.chatresponse;
 	}
 
 	this.parseMessages = function(string) {
-		//alert(string);
 		
-		if(string == this.oldMessage)
+		var responseObject = this.parseString(string);
+		
+		if(responseObject == null || responseObject.messages == null)
 			return;
 		
-		this.oldMessage = string;
-
-		this.debug("--- parsing messages: ");
-		this.debug(string);		
 		
-	
-		var x = this.parseString(string);
-		
-		if(x == null) {
-			return;
-		}
-		
-		
-		var newid = 0;
-		
-		if(x.attributes[0])
-			newid = x.attributes[0].nodeValue;
-
-		if(newid) {
-	
-			if(newid == this.id)
-				return;
-	
-			if(newid > 0) {
-				this.id = newid;
+		if(responseObject.id) {
+			if(responseObject.id > 0) {
+				this.id = responseObject.id;
 			}
-
 		}
-		
-		for (i = 0; i<x.childNodes.length; i++) {
-			if(!x.childNodes[i].firstChild.data)
-				continue;
-			var text = tools.trimString(x.childNodes[i].firstChild.data);
+
+		console.debug("id: "+this.id);
+		console.debug("messages: "+responseObject.messages.length);
+
+		for (i = 0; i<responseObject.messages.length; i++) {
+			var text = tools.trimString(responseObject.messages[i]);
+			console.debug('message'+i+': '+text);
 			if(text == "/quit") {
 				window.setTimeout("tx_vjchat_pi1_js_chat_instance.quit()", 1500);
 			}
@@ -386,7 +346,7 @@ function tx_vjchat_pi1_js_chat() {
 				this.createNewMessageNode(text);
 			}
 		}
-		
+
 	}
 
 	this.quit = function() {
@@ -419,9 +379,11 @@ function tx_vjchat_pi1_js_chat() {
 	  */	 
 	this.createNewMessageNode = function(message) {
 
-		this.debug("--- create message node: "+message);
-		//alert(message);
+		console.debug("message node: "+message);
 
+		if(message == null)
+			return;		
+		
 		var idsearch = message.match(/<div id="([a-z0-9]*)\"/i);
 
 		if(idsearch && idsearch[1]) {
@@ -452,8 +414,6 @@ function tx_vjchat_pi1_js_chat() {
 		newMessageNode.setAttributeNode(className);
 
 		this.colorizeNicknames(newMessageNode);
-
-
 		
 //		this.colorizeNicknames(newMessageNode);
 		this.showHideTime(newMessageNode, this.showTime);
@@ -497,8 +457,8 @@ function tx_vjchat_pi1_js_chat() {
 	  */
 	this.sendMessageToServer = function(message) {
 
-		this.debug("--- Putting message on stack:");
-		this.debug(message);		
+		console.debug("--- Putting message on stack:");
+		console.debug(message);		
 
 		if(message.length > 0)
 			this.messageStack.push(message);
@@ -518,16 +478,17 @@ function tx_vjchat_pi1_js_chat() {
 		this.messageStack.reverse();
 		
 		if(message) {
-			message = tools.urlEncode(message);
-			this.debug("--- Sending message:");
-			this.debug(message);			
+			console.debug("Sending message:");
+			console.debug(message);	
+			message = Base64.encode(message);
+		
 			
 			if(Ajax.activeRequestCount < this.maxActiveRequests)
 				new Ajax.Request(
 					this.scriptUrl, 
 					{
 						method:'post',
-						parameters:"r="+this.roomId+"&a=sm&t="+this.id+"&d="+this.debugMode+"&l="+this.lang+"&m="+escape(message)+"&charset="+this.charset,
+						parameters:"r="+this.roomId+"&a=sm&t="+this.id+"&d="+this.debugMode+"&l="+this.lang+"&m="+message+"&charset="+this.charset,
 						onSuccess:getMessagesResponseHandler,
 						onFailure:handleAjaxError,
 						on404:handleAjax404
@@ -641,7 +602,7 @@ function tx_vjchat_pi1_js_chat() {
 				this.scriptUrl, 
 				{
 					method:'get',
-					parameters:'r='+this.roomId+'&a=gu&charset='+this.charset,
+					parameters:'r='+this.roomId+'&ulhash='+this.ulhash+'&a=gu&charset='+this.charset+'&d='+this.debugMode+'&l='+this.lang,
 					onSuccess:getUserlistResponseHandler,
 					onFailure:handleAjaxError,
 					on404:handleAjax404
@@ -652,50 +613,35 @@ function tx_vjchat_pi1_js_chat() {
 	}
 
 	var getUserlistResponseHandler = function(t) {
-		// return to the scope of the chat object
-		//eval(globalInstanceName + ".parseUserlist(t.responseText)");
 		self.parseUserlist(t.responseText);
 	}
 
-	this.lastULResponse = "";
-
 	this.parseUserlist = function(string) {
-
-		this.debug("--- parsing userlist: "+string);
-
-		// recieve a message string like [MSG]username1[MSG]username2[ID]id
-	
-		// update only if something has changed
-		if(string == this.lastULResponse)
+		
+		var responseObject = this.parseString(string);
+		
+		if(!responseObject || responseObject.useritems == null)
 			return;
 
-		this.lastULResponse = string;
-		
-		var x = this.parseString(string);
-		
-		if(x == null)
+		console.debug('new ulhash:'+responseObject.ulhash);
+			
+        // update only if something has changed
+        if(this.ulhash == responseObject.ulhash)
 			return;
 
-		// split into messages an id
-//		var parts = string.split(this.idGlue);
-//		alert(this.IDGLUE);
-		// now split each message
-		// part[0] = message1
-		// part[1] = message2 ...
-//		var lines = parts[0].split(this.messagesGlue);
-
+		this.ulhash = responseObject.ulhash;
+		
 		// remove all nodes
 		this.clearUserList();
+
+		console.debug('userlist items: '+responseObject.useritems.length);
 		
 		// go through all messages and add them to the chat window by calling createNewMessageNode()
-		for (i = 0; i<x.childNodes.length; i++) {
-			if(!x.childNodes[i].firstChild.data)
-				continue;
-			this.createNewUserNode(tools.trimString(x.childNodes[i].firstChild.data));
+		for (i = 0; i<responseObject.useritems.length; i++) {
+			this.createNewUserNode(responseObject.useritems[i]);
 		}
 		
 		this.colorizeNicknames(this.userListElement);
-
 		this.notifyUserListChange();
 		
 	}
@@ -704,34 +650,28 @@ function tx_vjchat_pi1_js_chat() {
 		tools.clearNode(this.userListElement);
 	}
 	
-	this.createNewUserNode = function(value) {
+	this.createNewUserNode = function(userObject) {
 
-		if(value == "")		// skip empty values
+		if(!userObject)		// skip empty values
 			return;
 
-		var parts = value.split(this.usernameGlue);
+		var type = userObject.type;
+		var id = userObject.uid;
+		var style = userObject.style;
+		var username = userObject.username;
 		
-		var username = parts[0];
-		
-		this.debug(username);
-		
-		var type = parts[1];
-		var id = parts[2];
-		var style = parts[3];
-		
+		/*
 		if(this.useSnippets) {
-			var userlistsnippet = parts[4];
-			var tooltipsnippet = parts[5];
+			var userlistsnippet = userObject.userlistsnippet;
+			var tooltipsnippet = userObject.tooltipsnippet;
+			
 			
 			if((this.userId == id) && ((userlistsnippet == "") || (tooltipsnippet == "")))
 				if(window.confirm(self.snippetsError))
-					window.location.reload();
+					window.location.reload();			
 			
-		}
+		}*/
 		
-		
-		userList["user-"+id] = value;
-	
 		/*
 			create a node like:
 			<div class="tx-vjchat-userlist-item tx-vjchat-userlist-[moderator|user|expert|superuse]">
@@ -754,15 +694,17 @@ function tx_vjchat_pi1_js_chat() {
 		var classAtt = document.createAttribute("class");
 		classAtt.nodeValue = "tx-vjchat-userlist-username tx-vjchat-userid-"+id+" tx-vjchat-message-style-"+style;
 		newUsernameNode.setAttributeNode(classAtt);
-
-		if(this.useSnippets && (userlistsnippet.length > 0))
+		
+		var userlistsnippet = userObject.userlistsnippet;
+		var tooltipsnippet = userObject.tooltipsnippet;
+		var additonalinformation = userObject.additonalinformation;
+	
+		if(self.useSnippets && userlistsnippet && (userlistsnippet.length > 0))
 			newUsernameNode.innerHTML = userlistsnippet;
 		else
 			newUsernameNode.innerHTML = username;
 
 		newUserNode.appendChild(newUsernameNode);
-
-
 
 		Event.observe(newUserNode, 'click', 
 			function(evt) { 
@@ -778,7 +720,7 @@ function tx_vjchat_pi1_js_chat() {
 				var node = $('tx-vjchat-user-detail');
 			
 					// new fashion with snippets
-				if(self.useSnippets && (tooltipsnippet.length > 0)) {
+				if(self.useSnippets && tooltipsnippet && (tooltipsnippet.length > 0)) {
 					node.innerHTML = tooltipsnippet;
 				}
 				else {
@@ -793,17 +735,14 @@ function tx_vjchat_pi1_js_chat() {
 					classAtt.nodeValue = "tx-vjchat-user-detail-"+type;
 					body.setAttributeNode(classAtt);
 
-					for(var i=5;i<parts.length;i++) {
-
-						var value = parts[i].split(self.usernamesFieldGlue)[1];
-		
-						if(!value)
-							value = "";
-			
-						var newNode = document.createElement("p");
-						newNode.innerHTML = value;
-						body.appendChild(newNode);
-					
+					if(additonalinformation) {
+	
+						for(var i=0;i<additonalinformation.length;i++) {
+							var newNode = document.createElement("p");
+							newNode.innerHTML = additonalinformation[i];
+							body.appendChild(newNode);
+						
+						}
 					}
 				}
 				
@@ -946,33 +885,14 @@ function tx_vjchat_pi1_js_chat() {
 
 	this.performMouseOutUserList = function(evt) {
 		var node = $('tx-vjchat-user-detail');
-		//node.style.display = "none";
-		//if(Scriptaculous)
-			//Effect.Fade(node);
-		//else
-			node.hide();
+		node.hide();
 	}
 	
-	/*
-	this.showTooltip = function(evt, caption, content) {
-		self.performMouseMoveUserList(evt);
-		var node = $('tx-vjchat-user-detail');
-
-		tools.clearNode($('tx-vjchat-user-detail-caption'));
-		tools.clearNode($('tx-vjchat-user-detail-body'));		
-		$('tx-vjchat-user-detail-caption').innerHTML = caption;
-		$('tx-vjchat-user-detail-body').innerHTML = content;
-	
-		node.style.display = "block";
-	}
-	*/
-	
-
 	/* ==================================================== = = = = = = */
 	/* SECTION V:		TOOLS										*/
 	/* --------------------------------------------- - - - - - - */
 	
-	this.setMessageStyle = function(number) {
+	this.setMessageStyle = function(number, send) {
 		
 		var element = $("tx-vjchat-style-btn-"+number);
 		
@@ -985,10 +905,15 @@ function tx_vjchat_pi1_js_chat() {
 			container.childNodes[i].style.border = "none";
 		}
 		
-		element.style.border = "1px solid black";
+		if(this.currentChatStyle == number)
+			number = 0;
+		else
+			element.style.border = "1px solid black";
+			
+		this.currentChatStyle = number;
 		
-		this.sendMessageToServer("/setstyle "+number);
-		
+		if(typeof send=="undefined" || send == true)
+			this.sendMessageToServer("/setstyle "+number);
 		
 	}
 
@@ -1243,8 +1168,14 @@ function tx_vjchat_pi1_js_chat() {
 		if(this.useSnippets) {
 		
 		}
+	}	
+}
+
+
+if(!console) {
+	var console = { 
+		debug : function(message) {
+			tx_vjchat_pi1_js_chat_instance.debug(message);
+		} 
 	}
-	
-	
-	
 }

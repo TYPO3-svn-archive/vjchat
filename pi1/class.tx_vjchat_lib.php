@@ -1,23 +1,11 @@
 <?php
 
-//require_once(PATH_t3lib.'class.t3lib_div.php');
+require_once(t3lib_extMgm::siteRelPath('vjchat').'pi1/class.JSON.php');
 
 class tx_vjchat_lib {
 
-	function getUserNamesGlue() {
-		return '<user>';
-	}
-
 	function getUserNamesFieldGlue() {
 		return ': ';
-	}
-
-	function getMessagesGlue() {
-		return '<msg>';
-	}
-	
-	function getIdGlue() {
-		return '<id>';
 	}
 
 	function checkAccessToRoom($room, $user) {
@@ -114,13 +102,14 @@ class tx_vjchat_lib {
 		if(!$userid)
 			return false;
 
-		// is member?
-		if(t3lib_div::inList($room->members, $userid))
-			return true;
-		
-		// is owner?
+			// is owner?
 		if(tx_vjchat_lib::isOwner($room, $userid))
 			return true;
+
+			// is member?
+		if(t3lib_div::inList($room->members, $userid)) {
+			return true;
+		}			
 			
 		return false;
 	}
@@ -153,16 +142,87 @@ class tx_vjchat_lib {
 		return 'user';
 	}
 
-	function getUsernames($feusers, $name = false, $glue = ',&nbsp;', $cObj = null, $stdWrap = null) {
+	/**
+	  * Returns the chat user name that is the content of the field defined the room's flexform
+	  */
+	function getChatUserName($room, $user) {
+		$chatUsername = '';
+		
+		if(tx_vjchat_lib::isSuperuser($room, $user['uid']))
+			$chatUsername = $user[$room->chatUserNameFieldSuperusers];
+			
+		if(tx_vjchat_lib::isModerator($room, $user['uid']))
+			$chatUsername = $user[$room->chatUserNameFieldModerators];
+		
+		if(tx_vjchat_lib::isExpert($room, $user['uid']))
+			$chatUsername = $user[$room->chatUserNameFieldExperts];
+		
+		if($chatUsername == '')
+			$chatUsername = $user[$room->chatUserNameFieldUsers];
+		
+		return $chatUsername == '' ? $user['username'] : $chatUsername;
+
+	}
+
+	
+	/**
+	 * This function encodes all occuring usernames (depending on the assigned fe_user field) 
+	 * in content based on a user base. If the user base is empty all members (of all usertype) are used.
+	 */
+	function findAndEncodeChatUserNames($room, $content, $userBase) {
+		if(!$room)
+			return $content;
+		foreach($userBase as $user) {
+			$currentUserName = tx_vjchat_lib::getChatUserName($room, $user);
+			$encodedUser = tx_vjchat_lib::encodeUsername($currentUserName);
+			// replace the user name by the encoded one
+			$content = str_replace($currentUserName, $encodedUser, $content);
+		}
+		return $content;
+	}
+	
+	/**
+	 * This function encodes all occuring usernames (depending on the assigned fe_user field) 
+	 * in content based on a user base. If the user base is empty all members (of all usertype) are used.
+	 */
+	function findAndDecodeChatUserNames($room, $content, $userBase) {
+		if(!$room)
+			return $content;
+		foreach($userBase as $user) {
+			$currentUserName = tx_vjchat_lib::getChatUserName($room, $user);
+			$encodedUser = tx_vjchat_lib::encodeUsername($currentUserName);
+				// replace the encoded user name by the non-encoded one
+			$content = str_replace($encodedUser, $currentUserName, $content);
+		}
+		return $content;
+	}	
+	function encodeUsername($username) {
+		return urlencode($username);
+	}
+	
+	function decodeUsername($chatUsername = '') {
+		return urldecode($chatUsername);
+	}	
+
+	function getUserByChatUserName($room, $chatUsername, $userBase) {
+		// in principle, it is possible that this functions returns more than one user, in the case of a not unique ChatUserName
+		// all calling functions should be aware of this and handle this
+		$users = array();
+		foreach($userBase as $user) {
+			if($chatUsername == tx_vjchat_lib::getChatUserName($room, $user))
+				$users[] = $user;
+		}
+		return $users;			
+	}	
+
+	
+	function getUsernames($feusers, $userfieldname = 'username', $glue = ',&nbsp;', $cObj = null, $stdWrap = null) {
 		$userNames = array();
 		foreach($feusers as $user) {
 		
-			if($name) 
-				$userName = $user['name'] ? $user['name'] : $user['username'];
-			else
-				$userName = $user['username'];
+			$userName = !empty($user[$userfieldname]) ? $user[$userfieldname] : $user['username'];
 			
-			if(!$userName)
+			if(empty($userName))
 				continue;
 			
 			if($cObj && $stdWrap) {
@@ -455,7 +515,27 @@ class tx_vjchat_lib {
 	
 		return $decodedStr;
 	} 
+	
+	function json_decode($content) {
+		
+		if ($assoc) {
+			$json = new Services_JSON(SERVICES_JSON_LOOSE_TYPE);
+		}
+		else {
+			$json = new Services_JSON;
+		}
+		return $json->decode($content);
+	}
 
+	function json_encode($content, $root = NULL) {	
+		if($root)
+			$content = array($root => $content);
+	
+		$json = new Services_JSON;
+		return $json->encode($content);
+	}
+	
+	
 }
 if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/vjchat/pi1/class.tx_vjchat_lib.php'])	{
 	include_once($TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/vjchat/pi1/class.tx_vjchat_lib.php']);

@@ -39,7 +39,7 @@
 		<!--###SEND_BUTTON### begin --><button onClick="chat_instance.submitMessage()">###LABEL_SUBMIT###</button><!--###SEND_BUTTON### end -->
 	</div>
 
-	<pre id="tx-vjchat-debug" style="display:none;"></pre>
+	###DEBUG_CONTAINER###
 
 </div>
 
@@ -49,6 +49,14 @@
 	var chat_instance = new tx_vjchat_pi1_js_chat();
 
 	chat_instance.configuration = {
+		inputElement : $('txvjchatnewMessage'),				
+		messagesElement : $('tx-vjchat-messages'),
+		storedMessagesElement : $('tx-vjchat-storedMessages'),
+		stylesElement : $('tx-vjchat-style'),
+		userListElement : $('tx-vjchat-userlist'),
+		debugElementMessages : $('tx-vjchat-debug-messages'),
+		debugElementUserlist : $('tx-vjchat-debug-userlist'),
+		debugElementTimers : $('tx-vjchat-debug-timers'),
 		roomId : ###CHATROOM_ID###,
 		userId : "###USERID###",
 		scriptUrl : "###SCRIPTURL###",
@@ -58,10 +66,10 @@
 		charset : "###CHARSET###",
 		debugMode : "###DEBUG###",	
 		lang : "###LLKEY###",		
-		usernameGlue : "###USERNAMESGLUE###",
-		usernamesFieldGlue : "###USERNAMESFIELDGLUE###",
-		messagesGlue : "###MESSAGESGLUE###",
-		idGlue : "###IDGLUE###",
+		chatUserNameFieldSuperusers : "###CHAT_USERNAME_FIELD_SUPERUSERS###",
+		chatUserNameFieldExperts : "###CHAT_USERNAME_FIELD_EXPERTS###",
+		chatUserNameFieldModerators : "###CHAT_USERNAME_FIELD_MODERATORS###",
+		chatUserNameFieldUsers : "###CHAT_USERNAME_FIELD_USERS###",
 		userColors : ###USERCOLORS###,
 		colorizeNicks : ###COLORIZE_NICKS###,
 		showTime : ###SHOW_TIME###,
@@ -69,12 +77,6 @@
 		showStyles : ###SHOW_STYLES###,
 		refreshMessagesTime	: ###REFRESH_MESSAGES_TIME###,				
 		refreshUserlistTime	: ###REFRESH_USERLIST_TIME###,					
-		inputElement : $('txvjchatnewMessage'),				
-		messagesElement : $('tx-vjchat-messages'),
-		storedMessagesElement : $('tx-vjchat-storedMessages'),
-		stylesElement : $('tx-vjchat-style'),
-		userListElement : $('tx-vjchat-userlist'),
-		debugElement : $('tx-vjchat-debug'),
 		popup : ###ISPOPUP###,
 		popupJSWindowParams : "###POPUP_JS_WINDOW_PARAMS###",
 		userlistPMContent :	'###USERLIST_PM_CONTENT###',
@@ -99,7 +101,7 @@
 		soundMessage : ###SOUND_MESSAGE###,
 		soundUserlist : ###SOUND_USERLIST###,
 		chatWindow : self,
-		JSdebug : true		
+		JSdebug : ###DEBUG###,		
 	}
 
 	function openChatWindow(id) {
@@ -134,6 +136,7 @@
 			$('txvjchatnewMessage').focus();
 			chat_instance.init();
 			chat_instance.run();
+			chat_instance.setMessageStyle(###CURRENTMESSAGESTYLE###, false);
 		}
 		
 	};
@@ -159,7 +162,7 @@
 		
 	}		
 		
-		// this is just a bit hacking because soundManager config needs to be done before window.onLoad fires.
+		// soundManager config needs to be done before window.onLoad fires.
 	###SOUND_SUPPORT_EXTRA###
 	
 //]]>

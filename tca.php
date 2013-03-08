@@ -70,7 +70,7 @@ $TCA["tx_vjchat_entry"] = Array (
 $TCA["tx_vjchat_room"] = Array (
 	"ctrl" => $TCA["tx_vjchat_room"]["ctrl"],
 	"interface" => Array (
-		"showRecordFieldList" => "hidden,starttime,endtime,fe_group,name,description,welcomemessage,mode,showfullnames,closed,maxusercount,owner,moderators,experts,bannedusers,superusergroup,groupaccess,members,private"
+		"showRecordFieldList" => "hidden,starttime,endtime,fe_group,name,description,welcomemessage,mode,closed,maxusercount,owner,moderators,experts,bannedusers,superusergroup,groupaccess,members,private"
 	),
 	"feInterface" => $TCA["tx_vjchat_room"]["feInterface"],
 	"columns" => Array (
@@ -178,14 +178,7 @@ $TCA["tx_vjchat_room"] = Array (
                 "maxitems" => 1,
             )
         ),
-        "showfullnames" => Array (        
-            "exclude" => 1,        
-            "label" => "LLL:EXT:vjchat/locallang_db.php:tx_vjchat_room.showfullnames",        
-            "config" => Array (
-                "type" => "check",
-            )
-        ),
-/*		"moderators" => Array (		
+ /*		"moderators" => Array (		
 			"exclude" => 1,		
 			"label" => "LLL:EXT:vjchat/locallang_db.php:tx_vjchat_room.moderators",		
 			"config" => Array (
@@ -328,6 +321,57 @@ $TCA["tx_vjchat_room"] = Array (
             )
         ),
 
+        "chatUserNameFieldSuperusers" => Array (        
+            "exclude" => 1,        
+            "label" => "LLL:EXT:vjchat/locallang_db.php:tx_vjchat_room.chatUserNameFieldSuperusers",        
+            "config" => Array (
+                "type" => "select",    
+				"itemsProcFunc" => "tx_vjchat_itemsProcFunc->user_vjchat_getFeUserColumns",
+                "size" => 1,    
+                "minitems" => 0,
+                "maxitems" => 1,
+				"default" => 1,
+            )
+        ),
+		
+		"chatUserNameFieldModerators" => Array (        
+            "exclude" => 1,        
+            "label" => "LLL:EXT:vjchat/locallang_db.php:tx_vjchat_room.chatUserNameFieldModerators",        
+            "config" => Array (
+                "type" => "select",    
+				"itemsProcFunc" => "tx_vjchat_itemsProcFunc->user_vjchat_getFeUserColumns",
+                "size" => 1,    
+                "minitems" => 0,
+                "maxitems" => 1,
+				"default" => 1,
+            )
+        ),
+		
+        "chatUserNameFieldExperts" => Array (        
+            "exclude" => 1,        
+            "label" => "LLL:EXT:vjchat/locallang_db.php:tx_vjchat_room.chatUserNameFieldExperts",        
+            "config" => Array (
+                "type" => "select",    
+				"itemsProcFunc" => "tx_vjchat_itemsProcFunc->user_vjchat_getFeUserColumns",
+                "size" => 1,    
+                "minitems" => 0,
+                "maxitems" => 1,
+				"default" => 1,
+            )
+        ),
+		
+		"chatUserNameFieldUsers" => Array (        
+            "exclude" => 1,        
+            "label" => "LLL:EXT:vjchat/locallang_db.php:tx_vjchat_room.chatUserNameFieldUsers",        
+            "config" => Array (
+                "type" => "select",    
+				"itemsProcFunc" => "tx_vjchat_itemsProcFunc->user_vjchat_getFeUserColumns",
+                "size" => 1,    
+                "minitems" => 0,
+                "maxitems" => 1,
+				"default" => 1,
+            )
+        ),
 		
 		"showuserinfo_experts" => Array (        
             "exclude" => 1,        
@@ -337,21 +381,6 @@ $TCA["tx_vjchat_room"] = Array (
                 "default" => "name,company",
             )
         ),
-		
-		/*
-        "showuserinfo_experts" => Array (        
-            "exclude" => 1,        
-            "label" => "LLL:EXT:vjchat/locallang_db.php:tx_vjchat_room.showuserinfo_experts",        
-            "config" => Array (
-                "type" => "select",    
-				"itemsProcFunc" => "tx_vjchat_itemsProcFunc->user_vjchat_getFeUserColumns",
-                "size" => 10,    
-                "minitems" => 0,
-                "maxitems" => 100,
-				"default" => 1,
-            )
-        ),
-		*/
 		"showuserinfo_moderators" => Array (        
             "exclude" => 1,        
             "label" => "LLL:EXT:vjchat/locallang_db.php:tx_vjchat_room.showuserinfo_moderators",        
@@ -447,7 +476,7 @@ $TCA["tx_vjchat_room"] = Array (
     ),
 
     "types" => Array (
-        "0" => Array("showitem" => "--div--;General,hidden;;1;;1-1-1, name;;2;;2-2-2, description, welcomemessage, mode, showfullnames, closed, page;;3;;3-3-3, maxusercount, image, --div--;Users,moderators;;4;;4-4-4, experts, groupaccess, superusergroup, bannedusers;;5;;5-5-5, showuserinfo_experts;;6;;6-6-6, showuserinfo_moderators, showuserinfo_users, showuserinfo_superusers,--div--;Private Room,private,owner,members")
+        "0" => Array("showitem" => "--div--;General,hidden;;1;;1-1-1, name;;2;;2-2-2, description, welcomemessage, mode, closed, page;;3;;3-3-3, maxusercount, image, --div--;Users,moderators;;4;;4-4-4, experts, groupaccess, superusergroup, bannedusers;;5;;5-5-5, chatUserNameFieldSuperusers;;6;;6-6-6, chatUserNameFieldModerators, chatUserNameFieldExperts, chatUserNameFieldUsers, showuserinfo_experts, showuserinfo_moderators, showuserinfo_users, showuserinfo_superusers,--div--;Private Room,private,owner,members")
     ),
     "palettes" => Array (
         "1" => Array("showitem" => "starttime, endtime, fe_group")

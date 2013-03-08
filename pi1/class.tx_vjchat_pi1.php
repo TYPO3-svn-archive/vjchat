@@ -43,14 +43,12 @@ class tx_vjchat_pi1 extends tslib_pibase {
 	var $db;	// Datasource
 	
 	var $user;
+	var $debug = false;
 	
-	/**
-	 * [Put your description here]
-	 */
+
 	function main($content,$conf)	{
 		$this->conf=$conf;
 
-		//$chatScript = 'pi1/chat.php';
 		$chatScript = 'index.php?eID=tx_vjchat_pi1';
 
 		$GLOBALS['TSFE']->additionalHeaderData['tx_vjchat_inc'] = '
@@ -68,9 +66,7 @@ class tx_vjchat_pi1 extends tslib_pibase {
 			</script>
 		';
 
-		
-		//$this->chatScript = t3lib_div::getIndpEnv(TYPO3_REQUEST_DIR).t3lib_extMgm::siteRelPath($this->extKey).$chatScript;
-		$this->chatScript = $chatScript;
+		$this->chatScript = t3lib_div::getIndpEnv(TYPO3_REQUEST_DIR).$chatScript;
 		
 
 		$this->pi_USER_INT_obj=1;	// Configuring so caching is not expected. This value means that no cHash params are ever set. We do this, because it's a USER_INT object!
@@ -83,8 +79,10 @@ class tx_vjchat_pi1 extends tslib_pibase {
 
 		$this->loadFLEX();		
 		
+		$this->debug = $this->piVars['debug'];
+		
 		$this->db = t3lib_div::makeInstance('tx_vjchat_db');
-		$this->db->setDebug(true);
+		$this->db->setDebug($this->debug);
 		
 		if($this->piVars['leaveRoom'] && $this->db->isMemberOfRoom($this->piVars['leaveRoom'], $this->user['uid'])) {
 			$this->db->leaveRoom($this->piVars['leaveRoom'], $this->user['uid'], true, $this->pi_getLL('user_leaves_chat'));
@@ -123,25 +121,6 @@ class tx_vjchat_pi1 extends tslib_pibase {
 				break;
 			}
 		
-		
-/*
-		$content='
-			<strong>This is a few paragraphs:</strong><BR>
-			<p>This is line 1</p>
-			<p>This is line 2</p>
-	
-			<h3>This is a form:</h3>
-			<form action="'.$this->pi_getPageLink($GLOBALS['TSFE']->id).'" method="POST">
-				<input type="hidden" name="no_cache" value="1">
-				<input type="text" name="'.$this->prefixId.'[input_field]" value="'.htmlspecialchars($this->piVars['input_field']).'">
-				<input type="submit" name="'.$this->prefixId.'[submit_button]" value="'.htmlspecialchars($this->pi_getLL('submit_button_label')).'">
-			</form>
-			<BR>
-			<p>You can click here to '.$this->pi_linkToPage('get to this page again',$GLOBALS['TSFE']->id).'</p>
-		';*/
-	
-		//t3lib_div::debug($this->conf);
-	
 		return $this->pi_wrapInBaseClass($content);
 	}
 	
@@ -215,7 +194,7 @@ class tx_vjchat_pi1 extends tslib_pibase {
 
 		$value = $this->pi_getFFvalue($this->cObj->data['pi_flexform'], 'showModerators', 'sDEF');
 		$this->conf['FLEX']['showModerators'] = $value;
-
+		
 		$value = $this->pi_getFFvalue($this->cObj->data['pi_flexform'], 'showUsers', 'sDEF');
 		$this->conf['FLEX']['showUsers'] = $value;
 		
@@ -232,7 +211,7 @@ class tx_vjchat_pi1 extends tslib_pibase {
 		$this->conf['FLEX']['showDescriptionInChat'] = $value;
 
 		$value = $this->pi_getFFvalue($this->cObj->data['pi_flexform'], 'typoscriptRoomsTemplate', 'sDEF');
-		$this->conf['tsRooms'] = $value ? $value : 'rooms';		
+		$this->conf['tsRooms'] = $value ? $value : 'rooms';	
 		
 		if($this->conf['tsRooms'] == 'custom') {
 			$value = $this->pi_getFFvalue($this->cObj->data['pi_flexform'], 'typoscriptRoomsTemplateCustom', 'sDEF');
@@ -264,10 +243,6 @@ class tx_vjchat_pi1 extends tslib_pibase {
 	
 		$theValue = array();
 		foreach($rooms as $room) {
-
-			//check rights to view room
-			//if(!tx_vjchat_lib::checkAccessToRoom($room, $this->user))
-			//	continue;
 
 			$this->db->cleanUpUserInRoom($room->uid, 20, true, $this->pi_getLL('user_leaves_chat'));			
 			
@@ -325,7 +300,7 @@ class tx_vjchat_pi1 extends tslib_pibase {
 		}
 		
 			// these are always available
-		$cObj->data['username'] = $room->showFullNames() ? $user['name'] : $user['username'];
+		$cObj->data['username'] = tx_vjchat_lib::getChatUserName($room, $user);
 		$cObj->data['image'] = $user['image'];
 		$cObj->data['uid'] = $user['uid'];
 	
@@ -407,11 +382,9 @@ class tx_vjchat_pi1 extends tslib_pibase {
 		
 		
 		}
-		
-		//$this->db->updateUserInRoom($roomId, $this->user['uid']);
 
 		$template = $this->cObj->fileResource($this->conf['templateFile']);
-
+		
 		// there are two subparts: CHATROOM and CHATROOM_FULL
 		// these markers can be used by both types
 		$markerArray['###CHATROOM_NAME###'] = $room->name;
@@ -419,14 +392,9 @@ class tx_vjchat_pi1 extends tslib_pibase {
 		$markerArray['###SCRIPTURL###'] = $this->chatScript;
 		$markerArray['###LEAVEURL###'] = $this->pi_linkTP_keepPIvars_url(array(), 0, true);
 		
-		if($this->conf['FLEX']['chatwindow'])
-			$markerArray['###NEWWINDOWURL###'] = $this->conf['FLEX']['chatwindow'] ? $this->pi_linkTP_keepPIvars_url(array(), 0, true, $this->conf['FLEX']['chatwindow']) : $markerArray['###LEAVEURL###'];		
-		else
-			$markerArray['###NEWWINDOWURL###'] = ($this->pi_linkTP_keepPIvars_url(array(), 0, true)).'&type='.($this->conf['chatwindow.']['typeNum']);
-
-		$markerArray['###NEWWINDOWURL###'] = t3lib_div::getIndpEnv('TYPO3_SITE_URL').$markerArray['###NEWWINDOWURL###'];
+		$markerArray['###NEWWINDOWURL###'] = $this->getNewWindowUrl();
 			
-		$markerArray['###DEBUG###'] = $this->piVars['debug'] ? $this->piVars['debug'] : '';
+		$markerArray['###DEBUG###'] = $this->debug ? $this->debug : 'false';
 		
 		$markerArray['###LLKEY###'] = $LLKey = $GLOBALS['TSFE']->config['config']['language'];
 		
@@ -437,12 +405,6 @@ class tx_vjchat_pi1 extends tslib_pibase {
 		$markerArray['###CHARSET###'] = $GLOBALS['TSFE']->renderCharset;
 
 		$markerArray['###USERID###'] = $this->user['uid'];
-
-		// seperators for splits
-		$markerArray['###USERNAMESGLUE###'] = tx_vjchat_lib::getUserNamesGlue();
-		$markerArray['###MESSAGESGLUE###'] = tx_vjchat_lib::getMessagesGlue();		
-		$markerArray['###USERNAMESFIELDGLUE###'] = tx_vjchat_lib::getUserNamesFieldGlue();
-		$markerArray['###IDGLUE###'] = tx_vjchat_lib::getIdGlue();				
 
 		$markerArray['###USERCOLORS###'] = $this->getUserColorArray();
 
@@ -503,7 +465,6 @@ class tx_vjchat_pi1 extends tslib_pibase {
 		$markerArray['###LOADING_MESSAGE###'] = $this->cObj->cObjGetSingle($this->conf['loadingMessage'], $this->conf['loadingMessage.']);
 
 		$setup = $this->conf['chatbuttons_on.'];
-		//$sKeyArray = t3lib_TStemplate::sortedKeyList($setup);
 		$chatbuttons_on = array();
 		$chatbuttons_keys = array();
 		foreach($setup as $key => $value)	{
@@ -520,9 +481,21 @@ class tx_vjchat_pi1 extends tslib_pibase {
 		$markerArray['###CHATBUTTONS_ON###'] = "Array('".implode("','", $chatbuttons_on)."')";
 		$markerArray['###CHATBUTTONS_OFF###'] = "Array('".implode("','", $chatbuttons_off)."')";
 		
+		$markerArray['###DEBUG_CONTAINER###'] = $this->debug ? $this->cObj->cObjGet($this->conf['debugTemplate.']) : '';
+		
+		$markerArray['###CURRENTMESSAGESTYLE###'] = $this->user['tx_vjchat_chatstyle'];
+
+		
 		// display CHATROOM
 		if(!$this->cObj->data['isFull']) {
 
+			if($this->conf['useSnippets']) {
+					// try to add user
+				$this->db->updateUserInRoom($room->uid, $this->user['uid'], tx_vjchat_lib::isSuperuser($room, $this->user), $this->pi_getLL('user_enters_chat'));
+				$this->db->setUserlistSnippet($room->uid, $this->user['uid'], $this->getSnippet($room, $this->user, $this->conf['userlistSnippet.']));
+				$this->db->setTooltipSnippet($room->uid, $this->user['uid'], $this->getSnippet($room, $this->user, $this->conf['tooltipSnippet.']));
+			}
+		
 			$subpart = $this->cObj->getSubpart($template, '###CHATROOM###');
 
 			$markerArray['###SUBMIT_MESSAGE###'] = $this->pi_getLL('submit_message');
@@ -542,30 +515,18 @@ class tx_vjchat_pi1 extends tslib_pibase {
 				$this->cObj->data['enableTime'] = $this->conf['FLEX']['showTime'];
 				$this->cObj->data['enableSound'] = $this->conf['FLEX']['enableSound'] && $this->db->extCONF['soundSupport'];
 				$markerArray_FORMAT_CONTAINER['###CHATBUTTONS###'] =  $this->cObj->cObjGet($this->conf['chatbuttons.']);
-
-				// $subpartMarkerArray_TOOLS_CONTAINER['###FORMAT_CONTAINER###'] = $this->cObj->getSubpart($subpart_TOOLS_CONTAINER, '###FORMAT_CONTAINER###');;
 				$subpartMarkerArray_TOOLS_CONTAINER['###FORMAT_CONTAINER###'] = $this->cObj->substituteMarkerArray($subpart_FORMAT_CONTAINER, $markerArray_FORMAT_CONTAINER);
 			}
 	
-	
-/*			if(!$this->conf['FLEX']['showEmoticons']) 
-				$subpartMarkerArray_TOOLS_CONTAINER['###EMOTICONS_CONTAINER###'] = '';
-			else {*/
-				$subpart_EMOTICONS = $this->cObj->getSubpart($subpart_TOOLS_CONTAINER, '###EMOTICONS_CONTAINER###');
-				$markerArray_EMOTICONS['###EMOTICONS###'] = tx_vjchat_lib::getEmoticonsForChatRoom();
-				$markerArray_EMOTICONS['###EMOTICONS_DISPLAY###'] = $this->conf['FLEX']['showEmoticons'] ? "block" : "none";
-				$subpartMarkerArray_TOOLS_CONTAINER['###EMOTICONS_CONTAINER###'] = $this->cObj->substituteMarkerArray($subpart_EMOTICONS, $markerArray_EMOTICONS);
-/*			}*/
+			$subpart_EMOTICONS = $this->cObj->getSubpart($subpart_TOOLS_CONTAINER, '###EMOTICONS_CONTAINER###');
+			$markerArray_EMOTICONS['###EMOTICONS###'] = tx_vjchat_lib::getEmoticonsForChatRoom();
+			$markerArray_EMOTICONS['###EMOTICONS_DISPLAY###'] = $this->conf['FLEX']['showEmoticons'] ? "block" : "none";
+			$subpartMarkerArray_TOOLS_CONTAINER['###EMOTICONS_CONTAINER###'] = $this->cObj->substituteMarkerArray($subpart_EMOTICONS, $markerArray_EMOTICONS);
 
-/*			if(!$this->conf['FLEX']['showStyling']) 
-				$subpartMarkerArray_TOOLS_CONTAINER['###STYLING_CONTAINER###'] = '';
-			else {*/
-				$subpart_STYLES = $this->cObj->getSubpart($subpart_TOOLS_CONTAINER, '###STYLING_CONTAINER###');
-				$markerArray_STYLES['###STYLES###'] = $this->getStylingContainer();
-				$markerArray_STYLES['###STYLES_DISPLAY###'] = $this->conf['FLEX']['showStyles'] ? "block" : "none";				
-				$subpartMarkerArray_TOOLS_CONTAINER['###STYLING_CONTAINER###'] = $this->cObj->substituteMarkerArray($subpart_STYLES, $markerArray_STYLES);
-/*			}*/
-
+			$subpart_STYLES = $this->cObj->getSubpart($subpart_TOOLS_CONTAINER, '###STYLING_CONTAINER###');
+			$markerArray_STYLES['###STYLES###'] = $this->getStylingContainer();
+			$markerArray_STYLES['###STYLES_DISPLAY###'] = $this->conf['FLEX']['showStyles'] ? "block" : "none";				
+			$subpartMarkerArray_TOOLS_CONTAINER['###STYLING_CONTAINER###'] = $this->cObj->substituteMarkerArray($subpart_STYLES, $markerArray_STYLES);
 
 			$subpartMarkerArray['###TOOLS_CONTAINER###'] = '';
 			if($this->conf['FLEX']['showFormatting'] || $this->conf['FLEX']['showEmoticons']) {
@@ -580,17 +541,7 @@ class tx_vjchat_pi1 extends tslib_pibase {
 			}
 			else
 				$subpartMarkerArray['###SEND_BUTTON###'] = '';
-
-			
-			if($this->conf['useSnippets']) {
-					// try to add user
-				$this->db->updateUserInRoom($room->uid, $this->user['uid'], tx_vjchat_lib::isSuperuser($this->room, $this->user), $this->pi_getLL('user_enters_chat'));
-				
-					// prepare the user's snippets
-				$this->db->setUserlistSnippet($room->uid, $this->user['uid'], $this->getSnippet($room, $this->user, $this->conf['userlistSnippet.']));
-				$this->db->setTooltipSnippet($room->uid, $this->user['uid'], $this->getSnippet($room, $this->user, $this->conf['tooltipSnippet.']));
-			}
-
+		
 		}
 		// display CHATROOM_FULL
 		else {
@@ -602,7 +553,7 @@ class tx_vjchat_pi1 extends tslib_pibase {
 			$markerArray['###CHATURL###'] = $this->pi_linkTP_keepPIvars_url(array(), 0, false);
 			$markerArray['###USERID###'] = $this->user['uid'];			
 		}
-
+		
 		$theValue = $this->cObj->substituteMarkerArrayCached($subpart, $markerArray, $subpartMarkerArray);		
 	
 		// prepend the subpart COMMON
@@ -616,6 +567,64 @@ class tx_vjchat_pi1 extends tslib_pibase {
 
 	}
 	
+	/*
+	function getChatConfiguration($room) {
+		
+		$configuration = array(
+		
+			'roomId' 		=> $room->uid,
+			'userId' 		=> $this->user['uid'],
+			'scriptUrl' 	=> $this->chatScript,
+			'leaveUrl' 		=> $this->pi_linkTP_keepPIvars_url(array(), 0, true),
+			'newWindowUrl' 	=> $this->getNewWindowUrl(),
+			'initialId' 	=> $this->db->getLatestEntryId($room, $time),
+			'charset' 		=> $GLOBALS['TSFE']->renderCharset,
+			'debugMode' 	=> $this->debug,	
+			'lang' 			=> $GLOBALS['TSFE']->config['config']['language'],		
+
+			
+		usernameGlue : "###USERNAMESGLUE###",
+		usernamesFieldGlue : "###USERNAMESFIELDGLUE###",
+		messagesGlue : "###MESSAGESGLUE###",
+		idGlue : "###IDGLUE###",
+		chatUserNameFieldSuperusers : "###CHAT_USERNAME_FIELD_SUPERUSERS###",
+		chatUserNameFieldExperts : "###CHAT_USERNAME_FIELD_EXPERTS###",
+		chatUserNameFieldModerators : "###CHAT_USERNAME_FIELD_MODERATORS###",
+		chatUserNameFieldUsers : "###CHAT_USERNAME_FIELD_USERS###",
+		userColors : ###USERCOLORS###,
+		colorizeNicks : ###COLORIZE_NICKS###,
+		showTime : ###SHOW_TIME###,
+		showEmoticons : ###SHOW_EMOTICONS###,
+		showStyles : ###SHOW_STYLES###,
+		refreshMessagesTime	: ###REFRESH_MESSAGES_TIME###,				
+		refreshUserlistTime	: ###REFRESH_USERLIST_TIME###,					
+		popup : ###ISPOPUP###,
+		popupJSWindowParams : "###POPUP_JS_WINDOW_PARAMS###",
+		userlistPMContent :	'###USERLIST_PM_CONTENT###',
+		userlistPRContent : '###USERLIST_PR_CONTENT###',
+		userlistPMInfo : '###USERLIST_PM_INFO###',
+		userlistPRInfo : '###USERLIST_PR_INFO###',
+		talkToNewRoomName : "###TALK_TO_ROOM_NAME###",
+		allowPrivateMessages : ###ALLOW_PRIVATE_MESSAGES###,
+		allowPrivateRooms : ###ALLOW_PRIVATE_ROOMS###,
+		globalInstanceName : "chat_instance",
+		useSnippets : ###USE_SNIPPETS###,
+		snippetsError : '###SNIPPETS_ERROR###',
+		tooltipOffsetX : ###TOOLTIP_OFFSET_X###,
+		tooltipOffsetY : ###TOOLTIP_OFFSET_Y###,
+		focusOnNewMessage : false,
+		chatbuttonson : ###CHATBUTTONS_ON###,
+		chatbuttonsoff : ###CHATBUTTONS_OFF###,
+		chatbuttonskeys : ###CHATBUTTONS_KEYS###,
+		enableSound : ###ENABLE_SOUND###,
+		soundSupportOptions : ###SOUND_SUPPORT_OPTIONS###,
+		soundSupportName : "###SOUND_SUPPORT###",
+		soundMessage : ###SOUND_MESSAGE###,
+		soundUserlist : ###SOUND_USERLIST###,
+		chatWindow : self,
+		JSdebug : false		
+	}
+	*/
 
 	function displaySessionsOfRoom($roomId) {
 
@@ -672,8 +681,6 @@ class tx_vjchat_pi1 extends tslib_pibase {
 			return $this->displayErrorMessage($this->pi_getLL('access_denied'));
 			
 		
-//		var_dump($session);
-		
 		$entries = $this->db->getEntriesOfSession($session);
 
 		$isModerator = tx_vjchat_lib::isModerator($room, $this->user['uid']);
@@ -684,7 +691,7 @@ class tx_vjchat_pi1 extends tslib_pibase {
 
 			$feuser = $this->db->getFeUser($entry->feuser);
 			if($feuser['username'])
-				$this->cObj->data['username'] = $room->showFullNames() ? $feuser['name'] : $feuser['username'];
+				$this->cObj->data['username'] = tx_vjchat_lib::getChatUserName($room, $feuser['name']);
 			else
 				$this->cObj->data['username'] = 'SYSTEM';
 			
@@ -756,37 +763,39 @@ class tx_vjchat_pi1 extends tslib_pibase {
 		if($this->conf['FLEX']['showSuperusers']) {
 			$superusers = $this->db->getOnlineSuperusers($room->uid);
 			$this->cObj->data['userType'] = 'superuser';
-			$theValue['onlineSuperuser'] = tx_vjchat_lib::getUsernames($superusers, true, $conf['usersGlue'], $this->cObj, $conf['users_stdWrap.']);
+			$theValue['onlineSuperuser'] = tx_vjchat_lib::getUsernames($superusers, $room->chatUserNameFieldSuperusers, $conf['usersGlue'], $this->cObj, $conf['users_stdWrap.']);
 		}
 
 		if($this->conf['FLEX']['showExperts']) {		
 			$experts = $this->db->getOnlineExperts($room->uid);
 			$this->cObj->data['userType'] = 'expert';
-			$theValue['onlineExperts'] = tx_vjchat_lib::getUsernames($experts, true, $conf['usersGlue'], $this->cObj, $conf['users_stdWrap.']);
+			$theValue['onlineExperts'] = tx_vjchat_lib::getUsernames($experts, $room->chatUserNameFieldExperts, $conf['usersGlue'], $this->cObj, $conf['users_stdWrap.']);
 		}
 
 		if($this->conf['FLEX']['showModerators']) {
 			$moderators = $this->db->getOnlineModerators($room->uid);
 			$this->cObj->data['userType'] = 'moderator';
-			$theValue['onlineModerators'] = tx_vjchat_lib::getUsernames($moderators, true, $conf['usersGlue'], $this->cObj, $conf['users_stdWrap.']);
+			$theValue['onlineModerators'] = tx_vjchat_lib::getUsernames($moderators, $room->chatUserNameFieldModerators, $conf['usersGlue'], $this->cObj, $conf['users_stdWrap.']);
 		}
 
 		if($this->conf['FLEX']['showUsers']) {
 			$users = $this->db->getOnlineUsers($room->uid);
 			$this->cObj->data['userType'] = 'user';
-			$theValue['onlineUsers'] = tx_vjchat_lib::getUsernames($users, (($room->showFullNames) ? true : false), $conf['usersGlue'], $this->cObj, $conf['users_stdWrap.']);
+			$theValue['onlineUsers'] = tx_vjchat_lib::getUsernames($users, $room->chatUserNameFieldUsers, $conf['usersGlue'], $this->cObj, $conf['users_stdWrap.']);
 		}
 		
-		$allUsers = array_merge($superusers, $experts, $moderators, $users);
-		$theValue['allUserNicknames'] = tx_vjchat_lib::getUsernames($allUsers, false, $conf['usersGlue'], $this->cObj, $conf['users_stdWrap.']);
+		$allUsers = $this->db->getOnlineUsers($room->uid);
 		
 		$snippets = array();
+		$usernicknames = array();
 		foreach($allUsers as $user) {
 			$userSnippets = $this->db->getSnippets($room->uid, $user['uid']);
 			$this->cObj->data = array_merge($this->cObj->data, $user);
 			$singleSnippet = $this->cObj->stdWrap($userSnippets['userlistsnippet'], $conf['users_stdWrap.']);
 			$snippets[] = $singleSnippet;
+			$usernicknames[] = tx_vjchat_lib::getChatUserName($room, $user);
 		}
+		$theValue['allUserNicknames'] = implode(', ', $usernicknames);
 
 		$theValue['allUserSnippets'] = implode($conf['usersGlue'], $snippets);
 	
@@ -795,21 +804,20 @@ class tx_vjchat_pi1 extends tslib_pibase {
 		else
 			$theValue['chatwindow'] = false;
 		
-		if($this->conf['FLEX']['chatwindow'])
-			$theValue['newWindowUrl'] = $this->conf['FLEX']['chatwindow'] ? $this->pi_linkTP_keepPIvars_url(array(), 0, true, $this->conf['FLEX']['chatwindow']) : $markerArray['###LEAVEURL###'];		
-		else
-			$theValue['newWindowUrl'] = ($this->pi_linkTP_keepPIvars_url(array(), 0, true)).'&type='.($this->conf['chatwindow.']['typeNum']);
-			
-		$theValue['newWindowUrl'] = t3lib_div::getIndpEnv('TYPO3_SITE_URL').$theValue['newWindowUrl'];
+		$theValue['newWindowUrl'] = $this->getNewWindowUrl();
 
-//		$theValue['newWindowUrl'] = $this->conf['FLEX']['chatwindow'] ? $this->pi_linkTP_keepPIvars_url(array(), 0, true, $this->conf['FLEX']['chatwindow']) : $markerArray['###LEAVEURL###'];		
-		
 		$theValue['popup'] = $this->piVars['popup'];
 		$theValue['leaveChat'] = ($this->conf['FLEX']['display'] == 'rooms') && ($theValue['popup'] == false);
 
-		//t3lib_div::debug($theValue);
-		
 		return $theValue;
+	}
+	
+	function getNewWindowUrl() {
+		if($this->conf['FLEX']['chatwindow'])
+			$theValue = $this->conf['FLEX']['chatwindow'] ? $this->pi_linkTP_keepPIvars_url(array(), 0, true, $this->conf['FLEX']['chatwindow']) : $this->pi_linkTP_keepPIvars_url(array(), 0, true);		
+		else
+			$theValue = ($this->pi_linkTP_keepPIvars_url(array(), 0, true)).'&type='.($this->conf['chatwindow.']['typeNum']);
+		return t3lib_div::getIndpEnv('TYPO3_SITE_URL').$theValue;
 	}
 	
 	function getSessionData($session) {

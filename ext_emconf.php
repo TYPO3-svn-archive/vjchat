@@ -3,7 +3,7 @@
 ########################################################################
 # Extension Manager/Repository config file for ext: "vjchat"
 #
-# Auto generated 08-05-2011 17:38
+# Auto generated 08-05-2011 17:41
 #
 # Manual updates:
 # Only the data in the array - anything else is removed by next write.

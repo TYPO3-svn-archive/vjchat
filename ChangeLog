@@ -1,3 +1,8 @@
+12-06-01 0.3.5 Vincent Tietz
+* [add] field from feUsers table as display name
+* [add] chat commands concerning this field
+* [change] Switched to JSON
+
 11-05-08 0.3.4 Vincent Tietz
 * [fix] problem with loading chat in IE8
 * [fix] loading language files
